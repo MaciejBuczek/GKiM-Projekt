@@ -2,12 +2,12 @@
 <CodeBlocks_project_file>
 	<FileVersion major="1" minor="6" />
 	<Project>
-		<Option title="GKiM2019-Lab6" />
+		<Option title="GKiM-Projekt" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Build>
 			<Target title="Debug">
-				<Option output="bin/Debug/GKiM2019-Lab6" prefix_auto="1" extension_auto="1" />
+				<Option output="bin/Debug/GKiM-Projekt" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
@@ -43,7 +43,7 @@
 			<Add directory="SDL-1.2.15/lib" />
 		</Linker>
 		<Unit filename="cb.bmp" />
-		<Unit filename="GKiM-Lab6.cpp" />
+		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />
