@@ -14,8 +14,8 @@ using namespace std;
 
 SDL_Surface *screen;
 SDL_Surface *bmp;
-int width = 512;
-int height = 340;
+int width = 1024;
+int height = 680;
 
 string getNameOfFile();
 int getOption();
@@ -69,7 +69,7 @@ int getOption()
     cout << "Choice: ";
     cin >> option;
 
-    if(option != (1 && 2 && 3)) {
+    if(option != 1 && option != 2 && option != 3) {
         cout << "Incorrect choice. Choose again" << endl;
         getOption();
     }
@@ -283,9 +283,68 @@ void menu()
 
 void convertFromBMPip(string &fileName)
 {
-    //Load bmp surface
     bmp = SDL_LoadBMP(fileName.c_str());
-    ladujBMP(0,0, bmp);
+
+    SDL_Color rgb;
+    SDL_Color palete[16];
+    int index = 0;
+    for (int r = 0; r <= 255; r += 255) {
+        rgb.r = r;
+        for (int g = 0; g <= 255; g += 85) {
+            rgb.g = g;
+            for(int b = 0; b <= 255; b += 255){
+                rgb.b = b;
+                palete[index] = rgb;
+                index++;
+            }
+        }
+    }
+
+    int mistakeTab[16];
+    int red, green, blue;
+    for(int x = 0; x < bmp->w; x++) {
+        for(int y = 0; y < bmp->h; y++) {
+            rgb = getPixelSurface(x, y, bmp);
+
+            for(int i = 0; i < 16; i++) {
+
+                if(rgb.r > palete[i].r) {
+                    red = rgb.r - palete[i].r;
+                }
+                else {
+                    red = palete[i].r - rgb.r;
+                }
+
+                if(rgb.g > palete[i].g) {
+                    green = rgb.g - palete[i].g;
+                }
+                else {
+                    green = palete[i].g - rgb.g;
+                }
+
+                if(rgb.b > palete[i].b) {
+                    blue = rgb.b - palete[i].b;
+                }
+                else {
+                    blue = palete[i].b - rgb.b;
+                }
+
+                mistakeTab[i] = red + green + blue;
+            }
+
+            int minMistakeIndex = 0;
+            for(int i = 0; i < 16; i++) {
+
+                if(mistakeTab[minMistakeIndex] > mistakeTab[i])
+                    minMistakeIndex = i;
+            }
+
+            setPixel(x, y, rgb.r, rgb.g, rgb.b);
+            setPixel(x+bmp->w, y, palete[minMistakeIndex].r, palete[minMistakeIndex].g, palete[minMistakeIndex].b);
+        }
+    }
+
+    SDL_Flip(screen);
 }
 
 void convertFromBMPdp(string &fileName)
@@ -297,9 +356,33 @@ void convertFromBMPdp(string &fileName)
 
 void convertFromBMPgs(string &fileName)
 {
-    //Load bmp surface
     bmp = SDL_LoadBMP(fileName.c_str());
-    ladujBMP(0,0, bmp);
+
+
+    SDL_Color rgb;
+    Uint8 palete[16];
+    int grayScale = 0;
+    for (int i = 0; i < 16; i++) {
+        palete[i] = grayScale;
+        grayScale += 17;
+    }
+
+    int BW = 0;
+    for(int x = 0; x < bmp->w; x++) {
+        for(int y = 0; y < bmp->h; y++) {
+            rgb = getPixelSurface(x, y, bmp);
+            BW = 0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b;
+            int tempIndex = BW / 17;
+
+            setPixel(x, y, rgb.r, rgb.g, rgb.b);
+            setPixel(x+bmp->w, y, palete[tempIndex], palete[tempIndex], palete[tempIndex]);
+        }
+    }
+
+
+
+
+    SDL_Flip(screen);
 }
 
 void convertToBMP(string &fileName)
@@ -375,7 +458,7 @@ SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface) {
     SDL_Color color ;
     Uint32 col = 0 ;
     //okre�lamy pozycj�
-    char* pPosition=(char*)surface->pixels ;
+    char* pPosition=(char*)surface->pixels;
     //przesuni�cie wzgl�dem y
     pPosition+=(surface->pitch*y) ;
     //przesuni�cie wzgl�dem x
