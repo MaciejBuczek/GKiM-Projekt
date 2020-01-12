@@ -14,8 +14,16 @@ using namespace std;
 
 SDL_Surface *screen;
 SDL_Surface *bmp;
+SDL_Color **pictureTab;
+
 int width = 1024;
 int height = 680;
+
+int picWidth;
+int picHeight;
+
+int palette_counter = 0;
+SDL_Color *palette;
 
 string getNameOfFile();
 int getOption();
@@ -27,6 +35,9 @@ int checkChoice(string &option);
 void menu2(int conversionOption, string &fileName);
 void menu();
 void convertFromBMPip(string &fileName);
+int partition(int p, int r, int r_max, int r_red, int r_green);
+void quicksort(int p, int r, int r_max, int r_red, int r_green);
+void mediancut(int a, int b, int glebokosc);
 void convertFromBMPdp(string &fileName);
 void convertFromBMPgs(string &fileName);
 void convertToBMP(string &fileName);
@@ -284,6 +295,8 @@ void menu()
 void convertFromBMPip(string &fileName)
 {
     bmp = SDL_LoadBMP(fileName.c_str());
+    picWidth = bmp->w;
+    picHeight = bmp->h;
 
     SDL_Color rgb;
     SDL_Color palete[16];
@@ -292,7 +305,7 @@ void convertFromBMPip(string &fileName)
         rgb.r = r;
         for (int g = 0; g <= 255; g += 85) {
             rgb.g = g;
-            for(int b = 0; b <= 255; b += 255){
+            for(int b = 0; b <= 255; b += 255) {
                 rgb.b = b;
                 palete[index] = rgb;
                 index++;
@@ -344,14 +357,161 @@ void convertFromBMPip(string &fileName)
         }
     }
 
+
+
     SDL_Flip(screen);
 }
 
 void convertFromBMPdp(string &fileName)
 {
-    //Load bmp surface
     bmp = SDL_LoadBMP(fileName.c_str());
-    ladujBMP(0,0, bmp);
+    picWidth = bmp->w;
+    picHeight = bmp->h;
+
+    int amountOfColors = 16;
+
+    SDL_Color rgb;
+    palette = new SDL_Color[amountOfColors];
+    pictureTab = new SDL_Color*[picWidth];
+
+    for(int i = 0; i < picWidth; i++) {
+        pictureTab[i] = new SDL_Color[picHeight];
+    }
+
+    for(int i = 0; i < picWidth; i++) {
+        for(int j = 0; j < picHeight; j++) {
+            pictureTab[i][j] = getPixelSurface(i,j,bmp);
+        }
+    }
+
+    mediancut(0,(picWidth) * (picHeight),0);
+
+    for(int i = 0; i < amountOfColors; i++) {
+        cout << i << ": " << (int)palette[i].r << " " << (int)palette[i].g << " " << (int)palette[i].b << endl;
+    }
+
+
+    int mistakeTab[amountOfColors];
+    int red, green, blue;
+    for(int x = 0; x < picWidth; x++) {
+        for(int y = 0; y < picHeight; y++) {
+            rgb = getPixelSurface(x, y, bmp);
+
+            for(int i = 0; i < amountOfColors; i++) {
+
+                if(rgb.r > palette[i].r) {
+                    red = rgb.r - (int)palette[i].r;
+                }
+                else {
+                    red = (int)palette[i].r - rgb.r;
+                }
+
+                if(rgb.g > palette[i].g) {
+                    green = rgb.g - (int)palette[i].g;
+                }
+                else {
+                    green = (int)palette[i].g - rgb.g;
+                }
+
+                if(rgb.b > palette[i].b) {
+                    blue = rgb.b - (int)palette[i].b;
+                }
+                else {
+                    blue = (int)palette[i].b - rgb.b;
+                }
+
+                mistakeTab[i] = red + green + blue;
+            }
+
+            int minMistakeIndex = 0;
+            for(int i = 0; i < amountOfColors; i++) {
+                if(mistakeTab[minMistakeIndex] > mistakeTab[i])
+                    minMistakeIndex = i;
+            }
+
+            setPixel(x, y, rgb.r, rgb.g, rgb.b);
+            setPixel(x+picWidth, y, palette[minMistakeIndex].r, palette[minMistakeIndex].g, palette[minMistakeIndex].b);
+        }
+    }
+
+
+    SDL_Flip(screen);
+}
+
+int partition(int p, int r, int r_max, int r_red, int r_green) { // dzielimy tablice na dwie czesci, w pierwszej wszystkie liczby sa mniejsze badz rowne x, w drugiej wieksze lub rowne od x
+    SDL_Color x;
+    x = pictureTab[p%picWidth][p/picWidth];
+    int i = p, j = r; // i, j - indeksy w tabeli
+    SDL_Color w, u;
+    while (true) // petla nieskonczona - wychodzimy z niej tylko przez return j
+    {
+        w = pictureTab[i%picWidth][i/picWidth];
+        u = pictureTab[j%picWidth][j/picWidth];
+        if(r_max == r_red) {
+            while (u.r > x.r) { j--; u = pictureTab[j%picWidth][j/picWidth]; }
+            while (w.r < x.r) { i++; w = pictureTab[i%picWidth][i/picWidth]; }
+        }
+        else if(r_max == r_green) {
+            while (u.g > x.g) { j--; u = pictureTab[j%picWidth][j/picWidth]; }
+            while (w.g < x.g) { i++; w = pictureTab[i%picWidth][i/picWidth]; }
+        }
+        else {
+            while (u.b > x.b) { j--; u = pictureTab[j%picWidth][j/picWidth]; }
+            while (w.b < x.b) { i++; w = pictureTab[i%picWidth][i/picWidth]; }
+        }
+        if (i < j) // zamieniamy miejscami gdy i < j
+        {
+            w = pictureTab[i%picWidth][i/picWidth];
+            u = pictureTab[j%picWidth][j/picWidth];
+            pictureTab[i%picWidth][i/picWidth] = u;
+            pictureTab[j%picWidth][j/picWidth] = w;
+            i++;
+            j--;
+        }
+        else // gdy i >= j zwracamy j jako punkt podzialu tablicy
+            return j;
+    }
+}
+void quicksort(int p, int r, int r_max, int r_red, int r_green) { // sortowanie szybkie
+    int q;
+    if (p < r)
+    {
+        q = partition(p, r, r_max, r_red, r_green); // dzielimy tablice na dwie czesci; q oznacza punkt podzialu
+        quicksort(p, q, r_max, r_red, r_green); // wywolujemy rekurencyjnie quicksort dla pierwszej czesci tablicy
+        quicksort(q+1, r, r_max, r_red, r_green); // wywolujemy rekurencyjnie quicksort dla drugiej czesci tablicy
+    }
+}
+
+void mediancut(int a, int b, int glebokosc) {
+    if (glebokosc == 5) {
+        SDL_Color kolor;
+        kolor = pictureTab[(a+(b-a)/2)%picWidth][(a+(b-a)/2)/picWidth];
+        palette[palette_counter] = kolor;
+        palette_counter++;
+    }
+    else {
+        SDL_Color kolor_min, kolor_max, kolor;
+        kolor_max = pictureTab[0][0];
+        kolor_min = pictureTab[0][0];
+        for(int y = 0; y < height; y++) {
+            for(int x = 1; x < picWidth; x++) {
+                kolor = getPixelSurface(0, 0, bmp);
+                if(kolor.r > kolor_max.r) kolor_max.r = kolor.r;
+                if(kolor.g > kolor_max.g) kolor_max.g = kolor.g;
+                if(kolor.b > kolor_max.b) kolor_max.b = kolor.b;
+                if(kolor.r < kolor_min.r) kolor_min.r = kolor.r;
+                if(kolor.g < kolor_min.g) kolor_min.g = kolor.g;
+                if(kolor.b < kolor_min.b) kolor_min.b = kolor.b;
+            }
+        }
+        int r_red = kolor_max.r - kolor_min.r;
+        int r_green = kolor_max.g - kolor_min.g;
+        int r_blue = kolor_max.b - kolor_min.b;
+        int r_max = max(r_red, max(r_green, r_blue));
+        quicksort(a, b, r_max, r_red, r_green);
+        mediancut(a, a+(b-a)/2, glebokosc+1);
+        mediancut(a+(b-a)/2+1, b, glebokosc+1);
+    }
 }
 
 void convertFromBMPgs(string &fileName)
