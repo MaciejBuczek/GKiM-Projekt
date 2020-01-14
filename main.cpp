@@ -8,9 +8,12 @@
 #include <time.h>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <algorithm>
 using namespace std;
 
-using namespace std;
+vector<vector<SDL_Color> > sectors;
+SDL_Color palete[16];
 
 SDL_Surface *screen;
 SDL_Surface *bmp;
@@ -24,6 +27,7 @@ void showChoices(int option, string &fileName);
 bool checkIfFileExists(bool bmp);
 bool isNumber(string &option);
 int checkChoice(string &option);
+void medianCut();
 void menu2(int conversionOption, string &fileName);
 void menu();
 void convertFromBMPip(string &fileName);
@@ -286,7 +290,8 @@ void convertFromBMPip(string &fileName)
     bmp = SDL_LoadBMP(fileName.c_str());
 
     SDL_Color rgb;
-    SDL_Color palete[16];
+    //SDL_Color palete[16];
+/*
     int index = 0;
     for (int r = 0; r <= 255; r += 255) {
         rgb.r = r;
@@ -298,7 +303,8 @@ void convertFromBMPip(string &fileName)
                 index++;
             }
         }
-    }
+    }*/
+    medianCut();
 
     int mistakeTab[16];
     int red, green, blue;
@@ -347,11 +353,155 @@ void convertFromBMPip(string &fileName)
     SDL_Flip(screen);
 }
 
+enum Type{r,g,b};
+
+compareR(const SDL_Color lhs, const SDL_Color rhs){
+    return lhs.r>rhs.r;
+}
+compareG(const SDL_Color lhs, const SDL_Color rhs){
+    return lhs.g>rhs.g;
+}
+compareB(const SDL_Color lhs, const SDL_Color rhs){
+    return lhs.b>rhs.b;
+}
+Type getType(vector<SDL_Color> sector){
+    int rangeR, rangeG, rangeB;
+    int minR=255, maxR=0, minG=255, maxG=0, minB=255, maxB=0;
+    SDL_Color rgb;
+    for(int i=0; i<sector.size(); i++){
+        rgb=sector[i];
+        if(rgb.r<minR)
+            minR=rgb.r;
+        if(rgb.r>maxR)
+            maxR=rgb.r;
+        if(rgb.g<minG)
+            minG=rgb.g;
+        if(rgb.g>maxG)
+            maxG=rgb.g;
+        if(rgb.b<minB)
+            minB=rgb.b;
+        if(rgb.b>maxB)
+            maxB=rgb.b;
+    }
+    rangeR=maxR-minR;
+    rangeG=maxG-minG;
+    rangeB=maxB-minB;
+    if(rangeR==max(rangeR,max(rangeG,rangeB)))
+        return r;
+    else if(rangeG==max(rangeR,max(rangeG,rangeB)))
+        return g;
+    else
+        return b;
+}
+void sortSector(vector<SDL_Color> sector, Type t){
+    switch(t){
+    case r:
+        sort(sector.begin(), sector.end(), compareR);
+        break;
+    case g:
+        sort(sector.begin(), sector.end(), compareG);
+        break;
+    case b:
+        sort(sector.begin(), sector.end(), compareB);
+        break;
+    }
+}
+void initializeMediaCut(){
+    SDL_Color rgb;
+    Type t;
+    vector<SDL_Color> sector;
+    vector<SDL_Color> sector2;
+    int median;
+    for(int y=0; y<bmp->h; y++){
+        for(int x=0; x<bmp->w; x++){
+            rgb=getPixelSurface(x,y,bmp);
+            sector.push_back(rgb);
+        }
+    }
+    t=getType(sector);
+    sortSector(sector, t);
+    median = sector.size()/2;
+    for(int i=sector.size()-1; i>=median; i--){
+        sector2.push_back(sector[i]);
+        sector.pop_back();
+    }
+    sectors.push_back(sector);
+    sectors.push_back(sector2);
+}
+vector<vector<SDL_Color> > divideSector(vector<SDL_Color> sector){
+    int median;
+    Type t=getType(sector);
+    vector<SDL_Color> sector2;
+    vector<vector<SDL_Color> > temp;
+    sortSector(sector, t);
+    median = sector.size()/2;
+    for(int i=sector.size()-1; i>=median; i--){
+        sector2.push_back(sector[i]);
+        sector.pop_back();
+    }
+    temp.push_back(sector);
+    temp.push_back(sector2);
+    return temp;
+}
+SDL_Color getAverageColor(vector<SDL_Color> sector){
+    unsigned int r=0,g=0,b=0;
+    SDL_Color color;
+    for(int i=0; i<sector.size(); i++){
+        r+=sector[i].r;
+        g+=sector[i].g;
+        b+=sector[i].b;
+    }
+    color.r=r/sector.size();
+    color.g=g/sector.size();
+    color.b=b/sector.size();
+    return color;
+}
+void test(){
+    cout<<"palete:"<<endl;
+    for(int i=0; i<16; i++){
+        cout<<(int)palete[i].r<<", "<<(int)palete[i].g<<", "<<(int)palete[i].b<<endl;
+    }
+    for(int i=0; i<16; i++){
+        for(int y=0; y<10; y++){
+            for(int x=0; x<10; x++){
+                setPixel(width/2 + x,height/2+y,palete[i].r,palete[i].g,palete[i].b);
+            }
+        }
+    }
+    SDL_Flip(screen);
+}
+void medianCut(){
+    vector<vector<SDL_Color> > temp;
+    vector<vector<SDL_Color> > holder;
+    initializeMediaCut();
+    while(sectors.size()!=16){
+        for(int i=sectors.size()-1; i>=0; i--){
+            temp=divideSector(sectors[i]);
+            sectors.pop_back();
+            for(int j=0; j<temp.size(); j++){
+                holder.push_back(temp[j]);
+            }
+        }
+        for(int i=0; i<holder.size(); i++){
+            sectors.push_back(holder[i]);
+        }
+        holder.clear();
+    }
+    cout<<"sectors:"<<endl;
+    for(int i=0; i<sectors.size(); i++){
+        cout<<sectors[i].size()<<endl;
+    }
+    for(int i=0; i<sectors.size(); i++){
+        palete[i]=getAverageColor(sectors[i]);
+    }
+    test();
+}
 void convertFromBMPdp(string &fileName)
 {
     //Load bmp surface
     bmp = SDL_LoadBMP(fileName.c_str());
     ladujBMP(0,0, bmp);
+    medianCut();
 }
 
 void convertFromBMPgs(string &fileName)
@@ -522,6 +672,8 @@ int main ( int argc, char** argv )
     SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
 
     menu();
+    //string n="yee.bmp";
+    //convertFromBMPdp(n);
 
     // program main loop
     bool done = false;

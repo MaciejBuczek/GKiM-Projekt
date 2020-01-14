@@ -1,11 +1,13 @@
 # depslib dependency file v1.0
-1578516344 source:c:\repos\gkim-projekt\main.cpp
+1579002054 source:c:\repos\gkim-projekt\main.cpp
 	<cstdlib>
 	<stdlib.h>
 	<SDL/SDL.h>
 	<time.h>
 	<iostream>
 	<fstream>
+	<vector>
+	<algorithm>
 
 1325738638 c:\repos\gkim-projekt\sdl-1.2.15\include\sdl\sdl.h
 	"SDL_main.h"
