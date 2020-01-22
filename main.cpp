@@ -293,11 +293,35 @@ void menu()
     menu2(conversionOption, fileName);
 }
 
+int nearestColor(SDL_Color rgb) {
+    int colorIndex = 0;
+    int *mistakeTab = new int[amountOfColors];
+
+    for(int i = 0; i < amountOfColors; i++) {
+        mistakeTab[i] = abs(palete[i].r - rgb.r) + abs(palete[i].g - rgb.g) + abs(palete[i].b - rgb.b);
+    }
+
+    for(int i = 0; i < amountOfColors; i++) {
+        if(mistakeTab[colorIndex] > mistakeTab[i])
+            colorIndex = i;
+    }
+
+    return colorIndex;
+}
+
 void convertFromBMPip(string &fileName)
 {
+    ofstream zapis("lol.bin", ios::binary);
+
     bmp = SDL_LoadBMP(fileName.c_str());
 
     SDL_Color rgb;
+
+    char** bmpPixels = new char*[(bmp->w)/2];
+
+    for(int i = 0; i < (bmp->w/2); i++) {
+        bmpPixels[i] = new char[bmp->h];
+    }
 
     int index = 0;
     for (int r = 0; r <= 255; r += 255) {
@@ -312,28 +336,32 @@ void convertFromBMPip(string &fileName)
         }
     }
 
-    int mistakeTab[16];
-    int red, green, blue;
+    unsigned char tempChar;
+    int colorIndex = 0;
     for(int x = 0; x < bmp->w; x++) {
         for(int y = 0; y < bmp->h; y++) {
             rgb = getPixelSurface(x, y, bmp);
 
-            for(int i = 0; i < amountOfColors; i++) {
-                mistakeTab[i] = abs(palete[i].r - rgb.r) + abs(palete[i].g - rgb.g) + abs(palete[i].b - rgb.b);
-            }
-
-            int minMistakeIndex = 0;
-            for(int i = 0; i < 16; i++) {
-
-                if(mistakeTab[minMistakeIndex] > mistakeTab[i])
-                    minMistakeIndex = i;
-            }
+            colorIndex = nearestColor(rgb);
 
             setPixel(x, y, rgb.r, rgb.g, rgb.b);
-            setPixel(x+bmp->w, y, palete[minMistakeIndex].r, palete[minMistakeIndex].g, palete[minMistakeIndex].b);
+            setPixel(x+bmp->w, y, palete[colorIndex].r, palete[colorIndex].g, palete[colorIndex].b);
+
+            /**Scalanie HERE**/
+            if(x%2 == 1) {
+                tempChar += colorIndex;
+                bmpPixels[x/2][y] = tempChar;
+                zapis.write((char *)&tempChar, sizeof(char));
+            }
+            else {
+                tempChar = colorIndex;
+                tempChar <<= 4;
+            }
+            /**Koniec scalania**/
         }
     }
 
+    zapis.close();
     SDL_Flip(screen);
 }
 
@@ -476,61 +504,41 @@ void convertFromBMPdp(string &fileName)
 
     char** bmpPixels = new char*[(bmp->w)/2];
 
-    for(int i = 0; i < bmp->w; i++) {
+    for(int i = 0; i < (bmp->w)/2; i++) {
         bmpPixels[i] = new char[bmp->h];
     }
 
     unsigned char tempChar;
-    int *mistakeTab = new int[amountOfColors];
+    int colorIndex = 0;
     for(int y = 0; y < bmp->h; y++) {
         for(int x = 0; x < bmp->w; x++) {
             rgb = getPixelSurface(x, y, bmp);
 
-            for(int i = 0; i < amountOfColors; i++) {
-                mistakeTab[i] = abs(palete[i].r - rgb.r) + abs(palete[i].g - rgb.g) + abs(palete[i].b - rgb.b);
-            }
-
-            int minMistakeIndex = 0;
-            for(int i = 0; i < amountOfColors; i++) {
-
-                if(mistakeTab[minMistakeIndex] > mistakeTab[i])
-                    minMistakeIndex = i;
-            }
+            colorIndex = nearestColor(rgb);
 
             setPixel(x, y, rgb.r, rgb.g, rgb.b);
-            setPixel(x+bmp->w, y, palete[minMistakeIndex].r, palete[minMistakeIndex].g, palete[minMistakeIndex].b);
+            setPixel(x+bmp->w, y, palete[colorIndex].r, palete[colorIndex].g, palete[colorIndex].b);
 
             /**Scalanie HERE**/
             if(x%2 == 1) {
-                tempChar += minMistakeIndex;
+                tempChar += colorIndex;
                 bmpPixels[x/2][y] = tempChar;
                 zapis.write((char *)&tempChar, sizeof(char));
             }
             else {
-                tempChar = minMistakeIndex;
+                tempChar = colorIndex;
                 tempChar <<= 4;
             }
+            /**Koniec scalania**/
         }
     }
-
-    /*
-    for(int y = 0; y < bmp->h; y++) {
-        for(int x = 0; x < (bmp->w)/2; x++) {
-            if(x%2 == 1) {
-                char temp = tempChar[(int)(x/2)][y];
-                zapis.write((char *)temp, sizeof(char));
-            }
-        }
-    }
-    */
-
+    zapis.close();
     SDL_Flip(screen);
 }
 
 void convertFromBMPgs(string &fileName)
 {
     bmp = SDL_LoadBMP(fileName.c_str());
-
 
     SDL_Color rgb;
     Uint8 palete[16];
