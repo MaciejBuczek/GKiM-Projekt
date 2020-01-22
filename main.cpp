@@ -14,11 +14,14 @@ using namespace std;
 
 vector<vector<SDL_Color> > sectors;
 SDL_Color palete[16];
+int amountOfColors = 16;
 
 SDL_Surface *screen;
 SDL_Surface *bmp;
 int width = 1024;
 int height = 680;
+
+
 
 string getNameOfFile();
 int getOption();
@@ -40,6 +43,15 @@ SDL_Color getPixel (int x, int y);
 SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface);
 void ladujBMP(int x, int y, SDL_Surface *surface);
 
+void delExtention(string &fileName) {
+    for(int i = fileName.size()-1; i >= 0; i--) {
+        if(fileName[i] == '.') {
+            fileName.resize(i);
+            break;
+        }
+    }
+}
+
 string getNameOfFile()
 {
     string fileName;
@@ -52,13 +64,8 @@ string getNameOfFile()
         }
         fileName.resize(fileName.size()-2);
     }
+    delExtention(fileName);
 
-    for(int i = fileName.size()-1; i >= 0; i--) {
-        if(fileName[i] == '.') {
-            fileName.resize(i);
-            break;
-        }
-    }
     cout << fileName << endl;
     return fileName;
 }
@@ -242,9 +249,9 @@ void menu2(int conversionOption, string &fileName)
                 break;
             }
         }
-        else
-        {
+        else {
             cout << "File \"" << fileName << "\" does not exist!" << endl;
+            delExtention(fileName);
             menu2(conversionOption, fileName);
         }
         break;
@@ -262,6 +269,7 @@ void menu2(int conversionOption, string &fileName)
         else
         {
             cout << "File \"" << fileName << "\" does not exist!" << endl;
+            delExtention(fileName);
             menu2(conversionOption, fileName);
         }
         break;
@@ -290,8 +298,7 @@ void convertFromBMPip(string &fileName)
     bmp = SDL_LoadBMP(fileName.c_str());
 
     SDL_Color rgb;
-    //SDL_Color palete[16];
-/*
+
     int index = 0;
     for (int r = 0; r <= 255; r += 255) {
         rgb.r = r;
@@ -303,8 +310,7 @@ void convertFromBMPip(string &fileName)
                 index++;
             }
         }
-    }*/
-    medianCut();
+    }
 
     int mistakeTab[16];
     int red, green, blue;
@@ -312,30 +318,8 @@ void convertFromBMPip(string &fileName)
         for(int y = 0; y < bmp->h; y++) {
             rgb = getPixelSurface(x, y, bmp);
 
-            for(int i = 0; i < 16; i++) {
-
-                if(rgb.r > palete[i].r) {
-                    red = rgb.r - palete[i].r;
-                }
-                else {
-                    red = palete[i].r - rgb.r;
-                }
-
-                if(rgb.g > palete[i].g) {
-                    green = rgb.g - palete[i].g;
-                }
-                else {
-                    green = palete[i].g - rgb.g;
-                }
-
-                if(rgb.b > palete[i].b) {
-                    blue = rgb.b - palete[i].b;
-                }
-                else {
-                    blue = palete[i].b - rgb.b;
-                }
-
-                mistakeTab[i] = red + green + blue;
+            for(int i = 0; i < amountOfColors; i++) {
+                mistakeTab[i] = abs(palete[i].r - rgb.r) + abs(palete[i].g - rgb.g) + abs(palete[i].b - rgb.b);
             }
 
             int minMistakeIndex = 0;
@@ -456,25 +440,11 @@ SDL_Color getAverageColor(vector<SDL_Color> sector){
     color.b=b/sector.size();
     return color;
 }
-void test(){
-    cout<<"palete:"<<endl;
-    for(int i=0; i<16; i++){
-        cout<<(int)palete[i].r<<", "<<(int)palete[i].g<<", "<<(int)palete[i].b<<endl;
-    }
-    for(int i=0; i<16; i++){
-        for(int y=0; y<10; y++){
-            for(int x=0; x<10; x++){
-                setPixel(width/2 + x,height/2+y,palete[i].r,palete[i].g,palete[i].b);
-            }
-        }
-    }
-    SDL_Flip(screen);
-}
 void medianCut(){
     vector<vector<SDL_Color> > temp;
     vector<vector<SDL_Color> > holder;
     initializeMediaCut();
-    while(sectors.size()!=16){
+    while(sectors.size()!=amountOfColors){
         for(int i=sectors.size()-1; i>=0; i--){
             temp=divideSector(sectors[i]);
             sectors.pop_back();
@@ -494,14 +464,67 @@ void medianCut(){
     for(int i=0; i<sectors.size(); i++){
         palete[i]=getAverageColor(sectors[i]);
     }
-    test();
 }
 void convertFromBMPdp(string &fileName)
 {
-    //Load bmp surface
+    ofstream zapis("lol.bin", ios::binary);
+
     bmp = SDL_LoadBMP(fileName.c_str());
-    ladujBMP(0,0, bmp);
+
+    SDL_Color rgb;
     medianCut();
+
+    char** bmpPixels = new char*[(bmp->w)/2];
+
+    for(int i = 0; i < bmp->w; i++) {
+        bmpPixels[i] = new char[bmp->h];
+    }
+
+    unsigned char tempChar;
+    int *mistakeTab = new int[amountOfColors];
+    for(int y = 0; y < bmp->h; y++) {
+        for(int x = 0; x < bmp->w; x++) {
+            rgb = getPixelSurface(x, y, bmp);
+
+            for(int i = 0; i < amountOfColors; i++) {
+                mistakeTab[i] = abs(palete[i].r - rgb.r) + abs(palete[i].g - rgb.g) + abs(palete[i].b - rgb.b);
+            }
+
+            int minMistakeIndex = 0;
+            for(int i = 0; i < amountOfColors; i++) {
+
+                if(mistakeTab[minMistakeIndex] > mistakeTab[i])
+                    minMistakeIndex = i;
+            }
+
+            setPixel(x, y, rgb.r, rgb.g, rgb.b);
+            setPixel(x+bmp->w, y, palete[minMistakeIndex].r, palete[minMistakeIndex].g, palete[minMistakeIndex].b);
+
+            /**Scalanie HERE**/
+            if(x%2 == 1) {
+                tempChar += minMistakeIndex;
+                bmpPixels[x/2][y] = tempChar;
+                zapis.write((char *)&tempChar, sizeof(char));
+            }
+            else {
+                tempChar = minMistakeIndex;
+                tempChar <<= 4;
+            }
+        }
+    }
+
+    /*
+    for(int y = 0; y < bmp->h; y++) {
+        for(int x = 0; x < (bmp->w)/2; x++) {
+            if(x%2 == 1) {
+                char temp = tempChar[(int)(x/2)][y];
+                zapis.write((char *)temp, sizeof(char));
+            }
+        }
+    }
+    */
+
+    SDL_Flip(screen);
 }
 
 void convertFromBMPgs(string &fileName)
@@ -528,9 +551,6 @@ void convertFromBMPgs(string &fileName)
             setPixel(x+bmp->w, y, palete[tempIndex], palete[tempIndex], palete[tempIndex]);
         }
     }
-
-
-
 
     SDL_Flip(screen);
 }
@@ -671,6 +691,7 @@ int main ( int argc, char** argv )
     }
     SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
 
+    string fileName;
     menu();
     //string n="yee.bmp";
     //convertFromBMPdp(n);
@@ -697,6 +718,9 @@ int main ( int argc, char** argv )
                     // exit if ESCAPE is pressed
                     if (event.key.keysym.sym == SDLK_ESCAPE){
                         done = true;
+                    }
+                    if (event.key.keysym.sym == SDLK_SPACE){
+                        menu2(0, fileName);
                     }
                     break;
                 }
