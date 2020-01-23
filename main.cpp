@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 #ifdef __cplusplus
     #include <cstdlib>
 #else
@@ -11,724 +10,11 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 using namespace std;
 
 vector<vector<SDL_Color> > sectors;
-SDL_Color palete[16];
-
-SDL_Surface *screen;
-SDL_Surface *bmp;
-int width = 1024;
-int height = 680;
-
-string getNameOfFile();
-int getOption();
-void help();
-void showChoices(int option, string &fileName);
-bool checkIfFileExists(bool bmp);
-bool isNumber(string &option);
-int checkChoice(string &option);
-void medianCut();
-void menu2(int conversionOption, string &fileName);
-void menu();
-void convertFromBMPip(string &fileName);
-void convertFromBMPdp(string &fileName);
-void convertFromBMPgs(string &fileName);
-void convertToBMP(string &fileName);
-
-void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
-SDL_Color getPixel (int x, int y);
-SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface);
-void ladujBMP(int x, int y, SDL_Surface *surface);
-
-string getNameOfFile()
-{
-    string fileName;
-    cout << "Enter the name of file: ";
-    cin.ignore();
-    getline(cin, fileName);
-    if (fileName[0] == '"') {
-        for(int i = 0; i < fileName.size()-2; i++) {
-            fileName[i] = fileName[i+1];
-        }
-        fileName.resize(fileName.size()-2);
-    }
-
-    for(int i = fileName.size()-1; i >= 0; i--) {
-        if(fileName[i] == '.') {
-            fileName.resize(i);
-            break;
-        }
-    }
-    cout << fileName << endl;
-    return fileName;
-}
-
-int getOption()
-{
-    int option = 0;
-    cout << "Choose the option of conversion: " << endl;
-    cout << "1. Imposed palette" << endl;
-    cout << "2. Dedicated palette" << endl;
-    cout << "3. Gray scale" << endl;
-    cout << "Choice: ";
-    cin >> option;
-
-    if(option != 1 && option != 2 && option != 3) {
-        cout << "Incorrect choice. Choose again" << endl;
-        getOption();
-    }
-    return option;
-}
-
-void help()
-{
-    cout << "Program can convert bmp picture to 16 colors picture to reduce the size of file." << endl;
-    cout << "There are three conversion options." << endl;
-    cout << "1. Imposed palette - algorithm use predefined 16 colors and convert picture." << endl;
-    cout << "2. Dedicated palette - algorithm is searching picture to find which colors appear most often\n";
-    cout << "and use this colors in conversion." << endl;
-    cout << "3. Gray scale - algorithm use 16 degree gray scale in conversion." << endl;
-}
-
-void showChoices(int option, string &fileName)
-{
-    cout << "Actual choices: " << endl;
-    cout << "File name: ";
-    if(fileName.empty()) {
-        cout << "You must type file name first" << endl;
-    }
-    else
-    {
-        cout << fileName << endl;
-    }
-    cout << "Conversion option: ";
-
-    switch (option)
-    {
-    case 0:
-        cout << "You must choose option first" << endl;
-        break;
-    case 1:
-        cout << "Imposed palette" << endl;
-        break;
-    case 2:
-        cout << "Dedicated palette" << endl;
-        break;
-    case 3:
-        cout << "Gray scale" << endl;
-        break;
-    default:
-        cout << "Error. Bad conversionOption value" << endl;
-        break;
-    }
-}
-
-bool checkIfFileExists(bool bmp, string& fileName)
-{
-    fstream fileExists;
-    if(bmp == false)
-        fileName = fileName + ".lol";
-    else
-        fileName = fileName + ".bmp";
-
-    fileExists.open(fileName.c_str());
-    if(!fileExists.is_open()) {
-        fileExists.close();
-        return false;
-    }
-    fileExists.close();
-    return true;
-}
-
-bool isNumber(string &option)
-{
-    for(int i = 0; i < option.size(); i++) {
-        if(!isdigit(option[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-int checkChoice(string &option)
-{
-    int optionInMenu2 = 0;
-    while(!isNumber(option)) {
-        cout << "Incorrect choice. Choose again." << endl;
-        cout << "Choice: ";
-        cin >> option;
-    }
-    optionInMenu2 = atoi(option.c_str());
-
-    if(optionInMenu2 < 1 || optionInMenu2 > 9 || optionInMenu2 == 7 || optionInMenu2 == 8) {
-        while(optionInMenu2 < 1 || optionInMenu2 > 9 || optionInMenu2 == 7 || optionInMenu2 == 8) {
-            cout << "Incorrect choice. Choose again." << endl;
-            cout << "Choice: ";
-            cin >> option;
-
-            while(!isNumber(option)) {
-                cout << "Incorrect choice. Choose again." << endl;
-                cout << "Choice: ";
-                cin >> option;
-            }
-
-            optionInMenu2 = atoi(option.c_str());
-        }
-    }
-    return optionInMenu2;
-}
-
-void menu2(int conversionOption, string &fileName)
-{
-    string optionTemp;
-    int optionInMenu2 = 0;
-    cout << endl;
-    cout << "1. Help" << endl;
-    cout << "2. Enter file name" << endl;
-    cout << "3. Pick color palette" << endl;
-    cout << "4. Convert picture .bmp to .lol with actual choices" << endl;
-    cout << "5. Convert picture .lol to .bmp with actual name" << endl;
-    cout << "6. Show actual choices" << endl;
-    cout << "9. Exit" << endl;
-    cout << "Choice: ";
-    cin >> optionTemp;
-
-    optionInMenu2 = checkChoice(optionTemp);
-
-    cout << endl << endl;
-
-    switch(optionInMenu2)
-    {
-    case 1:
-        help();
-        menu2(conversionOption, fileName);
-        break;
-    case 2:
-        fileName = getNameOfFile();
-        menu2(conversionOption, fileName);
-        break;
-    case 3:
-        conversionOption = getOption();
-        menu2(conversionOption, fileName);
-        break;
-    case 4:
-        if(fileName.empty() == true) {
-            cout << "You must type a name of file to convert!\n\n";
-            fileName = getNameOfFile();
-            menu2(conversionOption, fileName);
-        }
-
-        if(checkIfFileExists(true, fileName))
-        {
-            switch(conversionOption)
-            {
-            case 0:
-                cout << "You must select a color palette!\n\n";
-                conversionOption = getOption();
-                menu2(conversionOption, fileName);
-                break;
-            case 1:
-                convertFromBMPip(fileName);
-                break;
-            case 2:
-                convertFromBMPdp(fileName);
-                break;
-            case 3:
-                convertFromBMPgs(fileName);
-                break;
-            default:
-                cout << "Error. Bad conversionOption value" << endl;
-                menu2(conversionOption, fileName);
-                break;
-            }
-        }
-        else
-        {
-            cout << "File \"" << fileName << "\" does not exist!" << endl;
-            menu2(conversionOption, fileName);
-        }
-        break;
-    case 5:
-        if(fileName.empty() == true) {
-            cout << "You must type a name of file to convert!\n\n";
-            fileName = getNameOfFile();
-            menu2(conversionOption, fileName);
-        }
-
-        if(checkIfFileExists(false, fileName))
-        {
-            convertToBMP(fileName);
-        }
-        else
-        {
-            cout << "File \"" << fileName << "\" does not exist!" << endl;
-            menu2(conversionOption, fileName);
-        }
-        break;
-    case 6:
-        showChoices(conversionOption, fileName);
-        menu2(conversionOption, fileName);
-        break;
-    case 9:
-        exit(0);
-        break;
-    default:
-        break;
-    }
-}
-
-void menu()
-{
-    cout << "Welcome in pictures converter. You can find informations in help." << endl;
-    int conversionOption = 0;
-    string fileName;
-    menu2(conversionOption, fileName);
-}
-
-void convertFromBMPip(string &fileName)
-{
-    bmp = SDL_LoadBMP(fileName.c_str());
-
-    SDL_Color rgb;
-    //SDL_Color palete[16];
-/*
-    int index = 0;
-    for (int r = 0; r <= 255; r += 255) {
-        rgb.r = r;
-        for (int g = 0; g <= 255; g += 85) {
-            rgb.g = g;
-            for(int b = 0; b <= 255; b += 255){
-                rgb.b = b;
-                palete[index] = rgb;
-                index++;
-            }
-        }
-    }*/
-    medianCut();
-
-    int mistakeTab[16];
-    int red, green, blue;
-    for(int x = 0; x < bmp->w; x++) {
-        for(int y = 0; y < bmp->h; y++) {
-            rgb = getPixelSurface(x, y, bmp);
-
-            for(int i = 0; i < 16; i++) {
-
-                if(rgb.r > palete[i].r) {
-                    red = rgb.r - palete[i].r;
-                }
-                else {
-                    red = palete[i].r - rgb.r;
-                }
-
-                if(rgb.g > palete[i].g) {
-                    green = rgb.g - palete[i].g;
-                }
-                else {
-                    green = palete[i].g - rgb.g;
-                }
-
-                if(rgb.b > palete[i].b) {
-                    blue = rgb.b - palete[i].b;
-                }
-                else {
-                    blue = palete[i].b - rgb.b;
-                }
-
-                mistakeTab[i] = red + green + blue;
-            }
-
-            int minMistakeIndex = 0;
-            for(int i = 0; i < 16; i++) {
-
-                if(mistakeTab[minMistakeIndex] > mistakeTab[i])
-                    minMistakeIndex = i;
-            }
-
-            setPixel(x, y, rgb.r, rgb.g, rgb.b);
-            setPixel(x+bmp->w, y, palete[minMistakeIndex].r, palete[minMistakeIndex].g, palete[minMistakeIndex].b);
-        }
-    }
-
-    SDL_Flip(screen);
-}
-
-enum Type{r,g,b};
-
-compareR(const SDL_Color lhs, const SDL_Color rhs){
-    return lhs.r>rhs.r;
-}
-compareG(const SDL_Color lhs, const SDL_Color rhs){
-    return lhs.g>rhs.g;
-}
-compareB(const SDL_Color lhs, const SDL_Color rhs){
-    return lhs.b>rhs.b;
-}
-Type getType(vector<SDL_Color> sector){
-    int rangeR, rangeG, rangeB;
-    int minR=255, maxR=0, minG=255, maxG=0, minB=255, maxB=0;
-    SDL_Color rgb;
-    for(int i=0; i<sector.size(); i++){
-        rgb=sector[i];
-        if(rgb.r<minR)
-            minR=rgb.r;
-        if(rgb.r>maxR)
-            maxR=rgb.r;
-        if(rgb.g<minG)
-            minG=rgb.g;
-        if(rgb.g>maxG)
-            maxG=rgb.g;
-        if(rgb.b<minB)
-            minB=rgb.b;
-        if(rgb.b>maxB)
-            maxB=rgb.b;
-    }
-    rangeR=maxR-minR;
-    rangeG=maxG-minG;
-    rangeB=maxB-minB;
-    if(rangeR==max(rangeR,max(rangeG,rangeB)))
-        return r;
-    else if(rangeG==max(rangeR,max(rangeG,rangeB)))
-        return g;
-    else
-        return b;
-}
-void sortSector(vector<SDL_Color> sector, Type t){
-    switch(t){
-    case r:
-        sort(sector.begin(), sector.end(), compareR);
-        break;
-    case g:
-        sort(sector.begin(), sector.end(), compareG);
-        break;
-    case b:
-        sort(sector.begin(), sector.end(), compareB);
-        break;
-    }
-}
-void initializeMediaCut(){
-    SDL_Color rgb;
-    Type t;
-    vector<SDL_Color> sector;
-    vector<SDL_Color> sector2;
-    int median;
-    for(int y=0; y<bmp->h; y++){
-        for(int x=0; x<bmp->w; x++){
-            rgb=getPixelSurface(x,y,bmp);
-            sector.push_back(rgb);
-        }
-    }
-    t=getType(sector);
-    sortSector(sector, t);
-    median = sector.size()/2;
-    for(int i=sector.size()-1; i>=median; i--){
-        sector2.push_back(sector[i]);
-        sector.pop_back();
-    }
-    sectors.push_back(sector);
-    sectors.push_back(sector2);
-}
-vector<vector<SDL_Color> > divideSector(vector<SDL_Color> sector){
-    int median;
-    Type t=getType(sector);
-    vector<SDL_Color> sector2;
-    vector<vector<SDL_Color> > temp;
-    sortSector(sector, t);
-    median = sector.size()/2;
-    for(int i=sector.size()-1; i>=median; i--){
-        sector2.push_back(sector[i]);
-        sector.pop_back();
-    }
-    temp.push_back(sector);
-    temp.push_back(sector2);
-    return temp;
-}
-SDL_Color getAverageColor(vector<SDL_Color> sector){
-    unsigned int r=0,g=0,b=0;
-    SDL_Color color;
-    for(int i=0; i<sector.size(); i++){
-        r+=sector[i].r;
-        g+=sector[i].g;
-        b+=sector[i].b;
-    }
-    color.r=r/sector.size();
-    color.g=g/sector.size();
-    color.b=b/sector.size();
-    return color;
-}
-void test(){
-    cout<<"palete:"<<endl;
-    for(int i=0; i<16; i++){
-        cout<<(int)palete[i].r<<", "<<(int)palete[i].g<<", "<<(int)palete[i].b<<endl;
-    }
-    for(int i=0; i<16; i++){
-        for(int y=0; y<10; y++){
-            for(int x=0; x<10; x++){
-                setPixel(width/2 + x,height/2+y,palete[i].r,palete[i].g,palete[i].b);
-            }
-        }
-    }
-    SDL_Flip(screen);
-}
-void medianCut(){
-    vector<vector<SDL_Color> > temp;
-    vector<vector<SDL_Color> > holder;
-    initializeMediaCut();
-    while(sectors.size()!=16){
-        for(int i=sectors.size()-1; i>=0; i--){
-            temp=divideSector(sectors[i]);
-            sectors.pop_back();
-            for(int j=0; j<temp.size(); j++){
-                holder.push_back(temp[j]);
-            }
-        }
-        for(int i=0; i<holder.size(); i++){
-            sectors.push_back(holder[i]);
-        }
-        holder.clear();
-    }
-    cout<<"sectors:"<<endl;
-    for(int i=0; i<sectors.size(); i++){
-        cout<<sectors[i].size()<<endl;
-    }
-    for(int i=0; i<sectors.size(); i++){
-        palete[i]=getAverageColor(sectors[i]);
-    }
-    test();
-}
-void convertFromBMPdp(string &fileName)
-{
-    //Load bmp surface
-    bmp = SDL_LoadBMP(fileName.c_str());
-    ladujBMP(0,0, bmp);
-    medianCut();
-}
-
-void convertFromBMPgs(string &fileName)
-{
-    bmp = SDL_LoadBMP(fileName.c_str());
-
-
-    SDL_Color rgb;
-    Uint8 palete[16];
-    int grayScale = 0;
-    for (int i = 0; i < 16; i++) {
-        palete[i] = grayScale;
-        grayScale += 17;
-    }
-
-    int BW = 0;
-    for(int x = 0; x < bmp->w; x++) {
-        for(int y = 0; y < bmp->h; y++) {
-            rgb = getPixelSurface(x, y, bmp);
-            BW = 0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b;
-            int tempIndex = BW / 17;
-
-            setPixel(x, y, rgb.r, rgb.g, rgb.b);
-            setPixel(x+bmp->w, y, palete[tempIndex], palete[tempIndex], palete[tempIndex]);
-        }
-    }
-
-
-
-
-    SDL_Flip(screen);
-}
-
-void convertToBMP(string &fileName)
-{
-
-}
-
-void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B)
-{
-  if ((x>=0) && (x<width) && (y>=0) && (y<height))
-  {
-    /* Zamieniamy poszczeg�lne sk�adowe koloru na format koloru piksela */
-    Uint32 pixel = SDL_MapRGB(screen->format, R, G, B);
-
-    /* Pobieramy informacj� ile bajt�w zajmuje jeden piksel */
-    int bpp = screen->format->BytesPerPixel;
-
-    /* Obliczamy adres piksela */
-    Uint8 *p = (Uint8 *)screen->pixels + y * screen->pitch + x * bpp;
-
-    /* Ustawiamy warto�� piksela, w zale�no�ci od formatu powierzchni*/
-    switch(bpp)
-    {
-        case 1: //8-bit
-            *p = pixel;
-            break;
-
-        case 2: //16-bit
-            *(Uint16 *)p = pixel;
-            break;
-
-        case 3: //24-bit
-            if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
-                p[0] = (pixel >> 16) & 0xff;
-                p[1] = (pixel >> 8) & 0xff;
-                p[2] = pixel & 0xff;
-            } else {
-                p[0] = pixel & 0xff;
-                p[1] = (pixel >> 8) & 0xff;
-                p[2] = (pixel >> 16) & 0xff;
-            }
-            break;
-
-        case 4: //32-bit
-            *(Uint32 *)p = pixel;
-            break;
-
-    }
-         /* ewentualna aktualizacja obrazu (aka double buffering) */
-  }
-}
-
-
-SDL_Color getPixel (int x, int y) {
-    SDL_Color color ;
-    Uint32 col = 0 ;
-    if ((x>=0) && (x<width) && (y>=0) && (y<height)) {
-        //okre�lamy pozycj�
-        char* pPosition=(char*)screen->pixels ;
-        //przesuni�cie wzgl�dem y
-        pPosition+=(screen->pitch*y) ;
-        //przesuni�cie wzgl�dem x
-        pPosition+=(screen->format->BytesPerPixel*x);
-        //kopiujemy dane piksela
-        memcpy(&col, pPosition, screen->format->BytesPerPixel);
-        //konwertujemy kolor
-        SDL_GetRGB(col, screen->format, &color.r, &color.g, &color.b);
-    }
-    return ( color ) ;
-}
-
-SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface) {
-    SDL_Color color ;
-    Uint32 col = 0 ;
-    //okre�lamy pozycj�
-    char* pPosition=(char*)surface->pixels;
-    //przesuni�cie wzgl�dem y
-    pPosition+=(surface->pitch*y) ;
-    //przesuni�cie wzgl�dem x
-    pPosition+=(surface->format->BytesPerPixel*x);
-    //kopiujemy dane piksela
-    memcpy(&col, pPosition, surface->format->BytesPerPixel);
-    //konwertujemy kolor
-    SDL_GetRGB(col, surface->format, &color.r, &color.g, &color.b);
-    return ( color ) ;
-}
-
-void ladujBMP(int x, int y, SDL_Surface *surface)
-{
-    if (!surface)
-    {
-        printf("Unable to load bitmap: %s\n", SDL_GetError());
-    }
-    else
-    {
-        SDL_Color kolor;
-        for (int yy=0; yy<surface->h; yy++) {
-			for (int xx=0; xx<surface->w; xx++) {
-				kolor = getPixelSurface(xx, yy, surface);
-				setPixel(x+xx, y+yy, kolor.r, kolor.g, kolor.b);
-			}
-        }
-        SDL_Flip(screen);
-    }
-
-}
-
-int main ( int argc, char** argv )
-{
-    freopen( "CON", "wt", stdout );
-    freopen( "CON", "wt", stderr );
-
-    if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
-    {
-        printf( "Unable to init SDL: %s\n", SDL_GetError() );
-        return 1;
-    }
-
-    // make sure SDL cleans up before exit
-    atexit(SDL_Quit);
-
-    // create a new window
-    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
-    if ( !screen )
-    {
-        printf("Unable to set video: %s\n", SDL_GetError());
-        return 1;
-    }
-    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
-
-    SDL_Surface *screen2 = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
-        if ( !screen2 )
-    {
-        printf("Unable to set video: %s\n", SDL_GetError());
-        return 1;
-    }
-    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
-
-    menu();
-    //string n="yee.bmp";
-    //convertFromBMPdp(n);
-
-    // program main loop
-    bool done = false;
-    while (!done)
-    {
-        // message processing loop
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            // check for messages
-            switch (event.type)
-            {
-                // exit if the window is closed
-            case SDL_QUIT:
-                done = true;
-                break;
-
-                // check for keypresses
-            case SDL_KEYDOWN:
-                {
-                    // exit if ESCAPE is pressed
-                    if (event.key.keysym.sym == SDLK_ESCAPE){
-                        done = true;
-                    }
-                    break;
-                }
-            } // end switch
-        } // end of message processing
-    } // end main loop
-
-    // free loaded bitmap
-    SDL_FreeSurface(bmp);
-
-    // all is well ;)
-    printf("Exited cleanly\n");
-    return 0;
-}
-=======
-#ifdef __cplusplus
-    #include <cstdlib>
-#else
-    #include <stdlib.h>
-
-#endif
-#include <SDL/SDL.h>
-#include <time.h>
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <algorithm>
-using namespace std;
-
-vector<vector<SDL_Color> > sectors;
-SDL_Color palete[16];
+vector <SDL_Color> palette;
 int amountOfColors = 16;
 
 SDL_Surface *screen;
@@ -750,14 +36,19 @@ void medianCut();
 void menu2(int conversionOption, string &fileName);
 void menu();
 
-void convertFromBMPip(string &fileName);
-void convertFromBMPdp(string &fileName);
-void convertFromBMPgs(string &fileName);
+void convertFromBMPip(string &fileName, bool dithering);
+void convertFromBMPdp(string &fileName, bool dithering);
+void convertFromBMPgs(string &fileName, bool dithering);
 void convertToBMP(string &fileName);
 
-void ditheringRGB(char** bmpPixels, ofstream& output);
-void ditheringGrayScale(char** bmpPixels, ofstream& output);
-void mergePixels(int x, int y, int index, char** bmpPixels, ofstream& output);
+void ditheringRGBVisualize(vector <unsigned char> &bmpPixels);
+void ditheringGrayScaleVisualize(vector <unsigned char> &bmpPixels);
+void RGBVisualize(vector <unsigned char> &bmpPixels);
+void GrayScaleVisualize(vector <unsigned char> &bmpPixels);
+
+void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels);
+
+void saveFile(vector <unsigned char> bmpPixels);
 
 void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
 SDL_Color getPixel (int x, int y);
@@ -795,13 +86,16 @@ int getOption()
 {
     int option = 0;
     cout << "Choose the option of conversion: " << endl;
-    cout << "1. Imposed palette" << endl;
-    cout << "2. Dedicated palette" << endl;
-    cout << "3. Gray scale" << endl;
+    cout << "1. Standard imposed palette" << endl;
+    cout << "2. Imposed palette with dithering" << endl;
+    cout << "3. Standard dedicated palette" << endl;
+    cout << "4. Dedicated palette with dithering" << endl;
+    cout << "5. Standard gray scale" << endl;
+    cout << "6. Gray scale with dithering" << endl;
     cout << "Choice: ";
     cin >> option;
 
-    if(option != 1 && option != 2 && option != 3) {
+    if(option != 1 && option != 2 && option != 3 && option != 4 && option != 5 && option != 6) {
         cout << "Incorrect choice. Choose again" << endl;
         getOption();
     }
@@ -837,13 +131,22 @@ void showChoices(int option, string &fileName)
         cout << "You must choose option first" << endl;
         break;
     case 1:
-        cout << "Imposed palette" << endl;
+        cout << "Standard imposed palette" << endl;
         break;
     case 2:
-        cout << "Dedicated palette" << endl;
+        cout << "Imposed palette with dithering" << endl;
         break;
     case 3:
-        cout << "Gray scale" << endl;
+        cout << "Standard dedicated palette" << endl;
+        break;
+    case 4:
+        cout << "Dedicated palette with dithering" << endl;
+        break;
+    case 5:
+        cout << "Standard gray scale" << endl;
+        break;
+    case 6:
+        cout << "Gray scale with dithering" << endl;
         break;
     default:
         cout << "Error. Bad conversionOption value" << endl;
@@ -956,13 +259,22 @@ void menu2(int conversionOption, string &fileName)
                 menu2(conversionOption, fileName);
                 break;
             case 1:
-                convertFromBMPip(fileName);
+                convertFromBMPip(fileName, false);
                 break;
             case 2:
-                convertFromBMPdp(fileName);
+                convertFromBMPip(fileName, true);
                 break;
             case 3:
-                convertFromBMPgs(fileName);
+                convertFromBMPdp(fileName, false);
+                break;
+            case 4:
+                convertFromBMPdp(fileName, true);
+                break;
+            case 5:
+                convertFromBMPgs(fileName, false);
+                break;
+            case 6:
+                convertFromBMPgs(fileName, true);
                 break;
             default:
                 cout << "Error. Bad conversionOption value" << endl;
@@ -1019,7 +331,7 @@ int nearestColor(SDL_Color rgb) {
     int *mistakeTab = new int[amountOfColors];
 
     for(int i = 0; i < amountOfColors; i++) {
-        mistakeTab[i] = abs(palete[i].r - rgb.r) + abs(palete[i].g - rgb.g) + abs(palete[i].b - rgb.b);
+        mistakeTab[i] = abs(palette[i].r - rgb.r) + abs(palette[i].g - rgb.g) + abs(palette[i].b - rgb.b);
     }
 
     for(int i = 0; i < amountOfColors; i++) {
@@ -1030,19 +342,12 @@ int nearestColor(SDL_Color rgb) {
     return colorIndex;
 }
 
-void convertFromBMPip(string &fileName)
-{
-    ofstream output("lol.bin", ios::binary);
-
+void convertFromBMPip(string &fileName, bool dithering) {
     bmp = SDL_LoadBMP(fileName.c_str());
 
     SDL_Color rgb;
 
-    char** bmpPixels = new char*[(bmp->w)/2];
-
-    for(int i = 0; i < (bmp->w/2); i++) {
-        bmpPixels[i] = new char[bmp->h];
-    }
+    vector <unsigned char> bmpPixels;
 
     int index = 0;
     for (int r = 0; r <= 255; r += 255) {
@@ -1051,23 +356,26 @@ void convertFromBMPip(string &fileName)
             rgb.g = g;
             for(int b = 0; b <= 255; b += 255){
                 rgb.b = b;
-                palete[index] = rgb;
+                palette.push_back(rgb);
                 index++;
             }
         }
     }
 
-    ditheringRGB(bmpPixels, output);
-    output.close();
+    if(dithering) {
+        ditheringRGBVisualize(bmpPixels);
+    }
+    else {
+        RGBVisualize(bmpPixels);
+    }
     SDL_Flip(screen);
 }
 
-void mergePixels(int x, int y, int index, char** bmpPixels, ofstream& output){
+void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels){
     unsigned char tempChar;
     if(x%2 == 1) {
         tempChar += index;
-        bmpPixels[x/2][y] = tempChar;
-        output.write((char *)&tempChar, sizeof(char));
+        bmpPixels.push_back(tempChar);
     }
     else {
         tempChar = index;
@@ -1075,7 +383,7 @@ void mergePixels(int x, int y, int index, char** bmpPixels, ofstream& output){
     }
 }
 
-void ditheringRGB(char** bmpPixels, ofstream& output){
+void ditheringRGBVisualize(vector <unsigned char> &bmpPixels){
     SDL_Color RGB;
     SDL_Color newRGB;
 
@@ -1095,7 +403,6 @@ void ditheringRGB(char** bmpPixels, ofstream& output){
         for(int x=0; x<bmp->w; x++)
         {
             RGB =getPixelSurface(x,y,bmp);
-
             setPixel(x,y,RGB.r,RGB.g,RGB.b);
 
             R=RGB.r+ErrR[x+shift][y];
@@ -1115,19 +422,19 @@ void ditheringRGB(char** bmpPixels, ofstream& output){
                 B=0;
             RGB={R,G,B};
 
-            index =nearestColor(RGB);
-            errR=RGB.r-palete[index].r;
+            index = nearestColor(RGB);
+            errR=RGB.r-palette[index].r;
             if (errR>255)
                 errR=255;
-            errG=RGB.g-palete[index].g;
+            errG=RGB.g-palette[index].g;
              if (errG>255)
                 errG=255;
-            errB=RGB.b-palete[index].b;
+            errB=RGB.b-palette[index].b;
              if (errB>255)
                 errB=255;
-            newRGB=palete[index];
+            newRGB=palette[index];
 
-            mergePixels(x, y, index, bmpPixels, output);
+            mergePixels(x, y, index, bmpPixels);
 
             ErrR[x+shift+1][y  ]+=(errR*7.0/16.0);
             ErrR[x+shift+1][y+1]+=(errR*1.0/16.0);
@@ -1144,12 +451,34 @@ void ditheringRGB(char** bmpPixels, ofstream& output){
             ErrB[x+shift  ][y+1]+=(errB*5.0/16.0);
             ErrB[x+shift-1][y+1]+=(errB*3.0/16.0);
 
-
             setPixel(x+bmp->w,y,newRGB.r, newRGB.g, newRGB.b);
         }
     }
 }
-void ditheringGrayScale(char** bmpPixels, ofstream& output){
+
+void RGBVisualize(vector <unsigned char> &bmpPixels){
+    SDL_Color RGB;
+
+    int errR, errG, errB, R, G, B, index;
+    int shift=1;
+
+    for(int y=0; y<bmp->h; y++)
+    {
+        for(int x=0; x<bmp->w; x++)
+        {
+            RGB = getPixelSurface(x,y,bmp);
+
+            index = nearestColor(RGB);
+
+            mergePixels(x, y, index, bmpPixels);
+
+            setPixel(x,y,RGB.r,RGB.g,RGB.b);
+            setPixel(x+bmp->w, y, palette[index].r, palette[index].g, palette[index].b);
+        }
+    }
+}
+
+void ditheringGrayScaleVisualize(vector <unsigned char> &bmpPixels){
     SDL_Color RGB;
     SDL_Color newRGB;
 
@@ -1162,8 +491,7 @@ void ditheringGrayScale(char** bmpPixels, ofstream& output){
     {
         for(int x=0; x<bmp->w; x++)
         {
-            RGB =getPixelSurface(x,y,bmp);
-            setPixel(x,y,RGB.r,RGB.g,RGB.b);
+            RGB = getPixelSurface(x,y,bmp);
 
             GS = 0.299*RGB.r + 0.587*RGB.g + 0.114*RGB.b;
             GS+=ErrGS[x+shift][y];
@@ -1173,34 +501,59 @@ void ditheringGrayScale(char** bmpPixels, ofstream& output){
                 GS=0;
 
             index=GS/17;
-            errGS=GS-palete[index].r;
+            errGS=GS-palette[index].r;
             if (errGS>255)
                 errGS=255;
 
-            newRGB=palete[index];
+            newRGB=palette[index];
 
-            mergePixels(x,y,index,bmpPixels,output);
+            mergePixels(x, y, index, bmpPixels);
 
             ErrGS[x+shift+1][y  ]+=(errGS*7.0/16.0);
             ErrGS[x+shift+1][y+1]+=(errGS*1.0/16.0);
             ErrGS[x+shift  ][y+1]+=(errGS*5.0/16.0);
             ErrGS[x+shift-1][y+1]+=(errGS*3.0/16.0);
 
+            setPixel(x,y,RGB.r,RGB.g,RGB.b);
             setPixel(x+bmp->w,y,newRGB.r, newRGB.r, newRGB.r);
         }
     }
 }
 
-compareR(const SDL_Color lhs, const SDL_Color rhs){
+void grayScaleVisualize(vector <unsigned char> &bmpPixels) {
+
+    SDL_Color RGB;
+    int GS, index;
+    for(int y=0; y<bmp->h; y++)
+    {
+        for(int x=0; x<bmp->w; x++)
+        {
+            RGB = getPixelSurface(x,y,bmp);
+
+            GS = 0.299*RGB.r + 0.587*RGB.g + 0.114*RGB.b;
+            index=GS/17;
+
+            mergePixels(x, y, index, bmpPixels);
+
+            setPixel(x,y,RGB.r,RGB.g,RGB.b);
+            setPixel(x+bmp->w,y,palette[index].r, palette[index].r, palette[index].r);
+        }
+    }
+}
+
+compareR(const SDL_Color lhs, const SDL_Color rhs) {
     return lhs.r>rhs.r;
 }
-compareG(const SDL_Color lhs, const SDL_Color rhs){
+
+compareG(const SDL_Color lhs, const SDL_Color rhs) {
     return lhs.g>rhs.g;
 }
-compareB(const SDL_Color lhs, const SDL_Color rhs){
+
+compareB(const SDL_Color lhs, const SDL_Color rhs) {
     return lhs.b>rhs.b;
 }
-Type getType(vector<SDL_Color> sector){
+
+Type getType(vector<SDL_Color> sector) {
     int rangeR, rangeG, rangeB;
     int minR=255, maxR=0, minG=255, maxG=0, minB=255, maxB=0;
     SDL_Color rgb;
@@ -1229,7 +582,8 @@ Type getType(vector<SDL_Color> sector){
     else
         return b;
 }
-void sortSector(vector<SDL_Color> sector, Type t){
+
+void sortSector(vector<SDL_Color> &sector, Type t) {
     switch(t){
     case r:
         sort(sector.begin(), sector.end(), compareR);
@@ -1242,6 +596,7 @@ void sortSector(vector<SDL_Color> sector, Type t){
         break;
     }
 }
+
 void initializeMediaCut(){
     SDL_Color rgb;
     Type t;
@@ -1256,15 +611,17 @@ void initializeMediaCut(){
     }
     t=getType(sector);
     sortSector(sector, t);
+
     median = sector.size()/2;
-    for(int i=sector.size()-1; i>=median; i--){
+    for(int i=sector.size()-1; i>=median; i--) {
         sector2.push_back(sector[i]);
         sector.pop_back();
     }
     sectors.push_back(sector);
     sectors.push_back(sector2);
 }
-vector<vector<SDL_Color> > divideSector(vector<SDL_Color> sector){
+
+vector<vector<SDL_Color> > divideSector(vector<SDL_Color> sector) {
     int median;
     Type t=getType(sector);
     vector<SDL_Color> sector2;
@@ -1279,6 +636,7 @@ vector<vector<SDL_Color> > divideSector(vector<SDL_Color> sector){
     temp.push_back(sector2);
     return temp;
 }
+
 SDL_Color getAverageColor(vector<SDL_Color> sector){
     unsigned int r=0,g=0,b=0;
     SDL_Color color;
@@ -1287,11 +645,12 @@ SDL_Color getAverageColor(vector<SDL_Color> sector){
         g+=sector[i].g;
         b+=sector[i].b;
     }
-    color.r=r/sector.size();
-    color.g=g/sector.size();
-    color.b=b/sector.size();
+    color.r=(double)r/sector.size();
+    color.g=(double)g/sector.size();
+    color.b=(double)b/sector.size();
     return color;
 }
+
 void medianCut(){
     vector<vector<SDL_Color> > temp;
     vector<vector<SDL_Color> > holder;
@@ -1309,64 +668,65 @@ void medianCut(){
         }
         holder.clear();
     }
-    cout<<"sectors:"<<endl;
     for(int i=0; i<sectors.size(); i++){
-        cout<<sectors[i].size()<<endl;
-    }
-    for(int i=0; i<sectors.size(); i++){
-        palete[i]=getAverageColor(sectors[i]);
+        palette.push_back(getAverageColor(sectors[i]));
     }
 }
-void convertFromBMPdp(string &fileName)
-{
-    ofstream output("lol.bin", ios::binary);
+
+void convertFromBMPdp(string &fileName, bool dithering) {
 
     bmp = SDL_LoadBMP(fileName.c_str());
     medianCut();
 
-    char** bmpPixels = new char*[(bmp->w)/2];
+    vector <unsigned char> bmpPixels;
 
-    for(int i = 0; i < (bmp->w)/2; i++) {
-        bmpPixels[i] = new char[bmp->h];
+    if(dithering) {
+        ditheringRGBVisualize(bmpPixels);
     }
-
-    ditheringRGB(bmpPixels, output);
-    output.close();
+    else {
+        RGBVisualize(bmpPixels);
+    }
     SDL_Flip(screen);
 }
 
-void convertFromBMPgs(string &fileName)
-{
-    ofstream output("lol.bin", ios::binary);
+void convertFromBMPgs(string &fileName, bool dithering) {
 
     bmp = SDL_LoadBMP(fileName.c_str());
 
-    char** bmpPixels = new char*[(bmp->w)/2];
-
-    for(int i = 0; i < (bmp->w/2); i++) {
-        bmpPixels[i] = new char[bmp->h];
-    }
+    vector <unsigned char> bmpPixels;
 
     SDL_Color rgb;
     int grayScale = 0;
     for (int i = 0; i < 16; i++) {
-        palete[i].r = grayScale;
-        palete[i].g = grayScale;
-        palete[i].b = grayScale;
+        rgb = {.r = grayScale, .g = grayScale, .b = grayScale};
+        palette.push_back(rgb);
         grayScale += 17;
     }
-    ditheringGrayScale(bmpPixels,output);
-    output.close();
+
+    if(dithering) {
+        ditheringGrayScaleVisualize(bmpPixels);
+    }
+    else {
+        grayScaleVisualize(bmpPixels);
+    }
     SDL_Flip(screen);
 }
 
-void convertToBMP(string &fileName)
-{
+void saveFile(vector <unsigned char> bmpPixels) {
+
+    /** Here bym dal kompresje
+    rleCompression();
+    byteRunCompression();
+    **/
+
+    /**A here zapis**/
+}
+
+void convertToBMP(string &fileName) {
 
 }
 
-void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B)
-{
+void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B) {
   if ((x>=0) && (x<width) && (y>=0) && (y<height))
   {
     /* Zamieniamy poszczeg�lne sk�adowe koloru na format koloru piksela */
@@ -1445,8 +805,7 @@ SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface) {
     return ( color ) ;
 }
 
-void ladujBMP(int x, int y, SDL_Surface *surface)
-{
+void ladujBMP(int x, int y, SDL_Surface *surface) {
     if (!surface)
     {
         printf("Unable to load bitmap: %s\n", SDL_GetError());
@@ -1465,8 +824,7 @@ void ladujBMP(int x, int y, SDL_Surface *surface)
 
 }
 
-int main ( int argc, char** argv )
-{
+int main ( int argc, char** argv ) {
     freopen( "CON", "wt", stdout );
     freopen( "CON", "wt", stderr );
 
@@ -1540,4 +898,3 @@ int main ( int argc, char** argv )
     printf("Exited cleanly\n");
     return 0;
 }
->>>>>>> Stashed changes
