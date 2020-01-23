@@ -48,7 +48,12 @@ void GrayScaleVisualize(vector <unsigned char> &bmpPixels);
 
 void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels);
 
-void saveFile(vector <unsigned char> bmpPixels);
+void compareCompressionSizes(vector <unsigned char> a, string &fileName);
+vector <unsigned char> RLECompress(vector <unsigned char> a, int size);
+vector <unsigned char> ByteRunCompress(vector <unsigned char> a, int length);
+vector <unsigned char> ByteRunDecompress(vector <unsigned char> a, int length);
+vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size);
+void saveFile(vector <unsigned char> data, string &fileName);
 
 void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
 SDL_Color getPixel (int x, int y);
@@ -368,18 +373,21 @@ void convertFromBMPip(string &fileName, bool dithering) {
     else {
         RGBVisualize(bmpPixels);
     }
-    SDL_Flip(screen);
+    compareCompressionSizes(bmpPixels, fileName);
 }
 
 void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels){
     unsigned char tempChar;
     if(x%2 == 1) {
+        tempChar = bmpPixels[bmpPixels.size()-1];
+        bmpPixels.pop_back();
         tempChar += index;
         bmpPixels.push_back(tempChar);
     }
     else {
         tempChar = index;
         tempChar <<= 4;
+        bmpPixels.push_back(tempChar);
     }
 }
 
@@ -454,6 +462,7 @@ void ditheringRGBVisualize(vector <unsigned char> &bmpPixels){
             setPixel(x+bmp->w,y,newRGB.r, newRGB.g, newRGB.b);
         }
     }
+    SDL_Flip(screen);
 }
 
 void RGBVisualize(vector <unsigned char> &bmpPixels){
@@ -476,6 +485,7 @@ void RGBVisualize(vector <unsigned char> &bmpPixels){
             setPixel(x+bmp->w, y, palette[index].r, palette[index].g, palette[index].b);
         }
     }
+    SDL_Flip(screen);
 }
 
 void ditheringGrayScaleVisualize(vector <unsigned char> &bmpPixels){
@@ -518,12 +528,14 @@ void ditheringGrayScaleVisualize(vector <unsigned char> &bmpPixels){
             setPixel(x+bmp->w,y,newRGB.r, newRGB.r, newRGB.r);
         }
     }
+    SDL_Flip(screen);
 }
 
 void grayScaleVisualize(vector <unsigned char> &bmpPixels) {
 
     SDL_Color RGB;
     int GS, index;
+
     for(int y=0; y<bmp->h; y++)
     {
         for(int x=0; x<bmp->w; x++)
@@ -539,6 +551,7 @@ void grayScaleVisualize(vector <unsigned char> &bmpPixels) {
             setPixel(x+bmp->w,y,palette[index].r, palette[index].r, palette[index].r);
         }
     }
+    SDL_Flip(screen);
 }
 
 compareR(const SDL_Color lhs, const SDL_Color rhs) {
@@ -686,7 +699,7 @@ void convertFromBMPdp(string &fileName, bool dithering) {
     else {
         RGBVisualize(bmpPixels);
     }
-    SDL_Flip(screen);
+    compareCompressionSizes(bmpPixels, fileName);
 }
 
 void convertFromBMPgs(string &fileName, bool dithering) {
@@ -709,17 +722,266 @@ void convertFromBMPgs(string &fileName, bool dithering) {
     else {
         grayScaleVisualize(bmpPixels);
     }
-    SDL_Flip(screen);
+
+    compareCompressionSizes(bmpPixels, fileName);
 }
 
-void saveFile(vector <unsigned char> bmpPixels) {
+vector <unsigned char> RLECompress(vector <unsigned char> a, int size) {
+    vector <unsigned char> temp;
+    int pointer = 0, counter = 0;
 
-    /** Here bym dal kompresje
-    rleCompression();
-    byteRunCompression();
-    **/
+    while (pointer != size - 1) {
+        if (a[pointer] != a[pointer + 1]) {
+            if (counter == 0) {
+                temp.push_back(a[pointer]);
+            }
+            else {
+                temp.push_back(a[pointer]);
+                temp.push_back(a[pointer]);
+                temp.push_back(counter - 1);
+                counter = 0;
+            }
+        }
+        else {
+            if (counter == 255) {
+                temp.push_back(a[pointer]);
+                temp.push_back(counter);
+                counter = 0;
+                continue;
+            }
+            else {
+                counter++;
+            }
+        }
+        pointer++;
+    }
+    if (a[pointer - 1] != a[size - 1]) {
+        temp.push_back(a[pointer]);
+    }
+    else {
+        temp.push_back(a[pointer]);
+        temp.push_back(a[pointer]);
+        temp.push_back(counter - 1);
+    }
 
-    /**A here zapis**/
+    return temp;
+}
+
+vector <unsigned char> ByteRunCompress(vector <unsigned char> a, int length) {
+    vector <unsigned char> temp;
+    int i = 0;
+    while (i < length) {
+        if (i < length - 1 && a[i] == a[i + 1]) {
+            int j = 0;
+            while (i + j < length - 1 && a[i + j] == a[i + j + 1] && j < 127) {
+                j++;
+            }
+            temp.push_back(-j);
+            temp.push_back((int)a[i + j]);
+            i += j + 1;
+        }
+        else {
+            int j = 0;
+            while (i + j < length - 1 && a[i + j] != a[j + i + 1] && j < 128) {
+                j++;
+            }
+            if (i + j == length - 1 && j < 128) {
+                j++;
+            }
+            temp.push_back(j - 1);
+            for (int k = 0; k < j; k++) {
+                temp.push_back((int)a[i + k]);
+            }
+            i += j;
+        }
+    }
+    return temp;
+}
+
+vector <unsigned char> ByteRunDecompress(vector <unsigned char> a, int length) {
+    int i = 0;
+    vector <unsigned char> temp;
+    while (i < length) {
+        if (a[i] == -128) {
+            i++;
+        }
+        else if (a[i] < 0) {
+            for (int j = 0; j < -(a[i] - 1); j++) {
+                temp.push_back((int)a[i + 1]);
+            }
+            i += 2;
+        }
+        else {
+            for (int j = 0; j < (a[i] + 1); j++) {
+                temp.push_back((int)a[i + 1 + j]);
+            }
+            i += a[i] + 2;
+        }
+    }
+    return temp;
+}
+
+vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size) {
+    vector <unsigned char> temp;
+    int pointer = 0, counter = 0;
+
+    while (pointer < size - 1) {
+        if (a[pointer] != a[pointer + 1]) {
+            temp.push_back(a[pointer]);
+        }
+        else {
+            temp.push_back(a[pointer]);
+            temp.push_back(a[pointer]);
+            counter = a[pointer + 2];
+            for(int i = 0; i < counter; i++)
+                temp.push_back(a[pointer]);
+            pointer += 2;
+            counter = 0;
+        }
+        pointer++;
+    }
+    if (a[pointer - 1] != a[size - 1]) {
+        temp.push_back(a[pointer]);
+    }
+
+    return temp;
+}
+
+void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
+    vector <unsigned char> RLE, ByteRun;
+    RLE = RLECompress(a, a.size());
+    ByteRun = ByteRunCompress(a, a.size());
+
+    ofstream zapis("kekwORG.lol", ios::binary);
+
+    for(int i = 0; i < a.size(); i++) {
+        zapis.write((char *)&a[i], sizeof(char));
+    }
+    zapis.close();
+
+    zapis.open("kekwRLE.lol", ios::binary);
+
+    for(int i = 0; i < RLE.size(); i++) {
+        zapis.write((char *)&RLE[i], sizeof(char));
+    }
+    zapis.close();
+
+    zapis.open("kekwByte.lol", ios::binary);
+
+    for(int i = 0; i < ByteRun.size(); i++) {
+        zapis.write((char *)&ByteRun[i], sizeof(char));
+    }
+    zapis.close();
+
+    unsigned char temp, temp1, temp2;
+
+    vector <unsigned char> odczyt1, odczyt2, odczyt3;
+
+    ifstream odczyt("kekwORG.lol", ios::binary);
+
+    for(int i = 0; i < a.size(); i++) {
+        odczyt.read((char *)&temp, sizeof(char));
+        odczyt1.push_back(temp);
+    }
+
+    odczyt.close();
+
+    odczyt.open("kekwRLE.lol", ios::binary);
+
+    for(int i = 0; i < a.size(); i++) {
+        odczyt.read((char *)&temp, sizeof(char));
+        odczyt2.push_back(temp);
+    }
+
+    odczyt.close();
+
+    odczyt.open("kekwByte.lol", ios::binary);
+
+    for(int i = 0; i < a.size(); i++) {
+        odczyt.read((char *)&temp, sizeof(char));
+        odczyt3.push_back(temp);
+    }
+
+    odczyt.close();
+
+    int index = 0;
+    for(int y = 0; y < bmp->h; y++) {
+        for(int x = 0; x < (bmp->w)/2; x++) {
+            temp = odczyt1[index];
+            temp1 = temp & 0b11110000;
+            temp1 >>= 4;
+            temp2 = temp & 0b00001111;
+            setPixel(x*2, y+bmp->h, palette[(int)temp1].r, palette[(int)temp1].g, palette[(int)temp1].b);
+            setPixel(x*2+1, y+bmp->h, palette[(int)temp2].r, palette[(int)temp2].g, palette[(int)temp2].b);
+
+            index++;
+        }
+    }
+
+    odczyt1.clear();
+    odczyt1 = RLEDecompress(odczyt2, odczyt2.size());
+
+    index = 0;
+    for(int y = 0; y < bmp->h; y++) {
+        for(int x = 0; x < (bmp->w)/2; x++) {
+            temp = odczyt1[index];
+            temp1 = temp & 0b11110000;
+            temp1 >>= 4;
+            temp2 = temp & 0b00001111;
+            setPixel(x*2+bmp->w, y+bmp->h, palette[(int)temp1].r, palette[(int)temp1].g, palette[(int)temp1].b);
+            setPixel(x*2+1+bmp->w, y+bmp->h, palette[(int)temp2].r, palette[(int)temp2].g, palette[(int)temp2].b);
+
+            index++;
+        }
+    }
+
+    odczyt1.clear();
+    odczyt1 = ByteRunDecompress(odczyt3, odczyt3.size());
+
+    index = 0;
+    for(int y = 0; y < bmp->h; y++) {
+        for(int x = 0; x < (bmp->w)/2; x++) {
+            temp = odczyt1[index];
+            temp1 = temp & 0b11110000;
+            temp1 >>= 4;
+            temp2 = temp & 0b00001111;
+            setPixel(x*2+(bmp->w*2), y+bmp->h, palette[(int)temp1].r, palette[(int)temp1].g, palette[(int)temp1].b);
+            setPixel(x*2+1+(bmp->w*2), y+bmp->h, palette[(int)temp2].r, palette[(int)temp2].g, palette[(int)temp2].b);
+
+            index++;
+        }
+    }
+
+    SDL_Flip(screen);
+
+
+    /*
+    if (RLE.size() == ByteRun.size()) {
+        cout << "Lepiej ByteRun, bo RLE sam pisalem i nie wiem czy w 100% dziala xD" << endl;
+        saveFile(ByteRun);
+    }
+    else {
+        if (RLE.size() < ByteRun.size()) {
+            cout << "ByteRun mniejszy :D" << endl;
+            saveFile(RLE, fileName);
+        }
+        else {
+            cout << "RLE mniejszy :D" << endl;
+            saveFile(ByteRun, fileName);
+        }
+    }
+    */
+}
+
+void saveFile(vector <unsigned char> data, string &fileName) {
+
+    ofstream zapis("kek.lol", ios::binary);
+
+    for(int i = 0; i < data.size(); i++) {
+        zapis.write((char *)&data[i], sizeof(char));
+    }
+
+    zapis.close();
 }
 
 void convertToBMP(string &fileName) {
