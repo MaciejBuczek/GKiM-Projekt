@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1579002054 source:c:\repos\gkim-projekt\main.cpp
+1579782735 source:c:\repos\gkim-projekt\main.cpp
 	<cstdlib>
 	<stdlib.h>
 	<SDL/SDL.h>
