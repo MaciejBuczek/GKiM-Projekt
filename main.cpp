@@ -50,8 +50,8 @@ void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels);
 
 void compareCompressionSizes(vector <unsigned char> a, string &fileName);
 vector <unsigned char> RLECompress(vector <unsigned char> a, int size);
-vector <unsigned char> ByteRunCompress(vector <unsigned char> a, int length);
-vector <unsigned char> ByteRunDecompress(vector <unsigned char> a, int length);
+vector <char> ByteRunCompress(vector <char> a, int length);
+vector <char> ByteRunDecompress(vector <char> a, int length);
 vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size);
 void saveFile(vector <unsigned char> data, string &fileName);
 
@@ -767,22 +767,22 @@ vector <unsigned char> RLECompress(vector <unsigned char> a, int size) {
     return temp;
 }
 
-vector <unsigned char> ByteRunCompress(vector <unsigned char> a, int length) {
-    vector <unsigned char> temp;
+vector <char> ByteRunCompress(vector <unsigned char> a, int length) {
+    vector<char> temp;
     int i = 0;
     while (i < length) {
-        if (i < length - 1 && a[i] == a[i + 1]) {
+        if (i < length - 1 && (char)a[i] == (char)a[i + 1]) {
             int j = 0;
-            while (i + j < length - 1 && a[i + j] == a[i + j + 1] && j < 127) {
+            while (i + j < length - 1 && (char)a[i + j] == (char)a[i + j + 1] && j < 127) {
                 j++;
             }
             temp.push_back(-j);
-            temp.push_back((int)a[i + j]);
+            temp.push_back((char)a[i + j]);
             i += j + 1;
         }
         else {
             int j = 0;
-            while (i + j < length - 1 && a[i + j] != a[j + i + 1] && j < 128) {
+            while (i + j < length - 1 && (char)a[i + j] != (char)a[j + i + 1] && j < 128) {
                 j++;
             }
             if (i + j == length - 1 && j < 128) {
@@ -790,7 +790,7 @@ vector <unsigned char> ByteRunCompress(vector <unsigned char> a, int length) {
             }
             temp.push_back(j - 1);
             for (int k = 0; k < j; k++) {
-                temp.push_back((int)a[i + k]);
+                temp.push_back((char)a[i + k]);
             }
             i += j;
         }
@@ -798,9 +798,9 @@ vector <unsigned char> ByteRunCompress(vector <unsigned char> a, int length) {
     return temp;
 }
 
-vector <unsigned char> ByteRunDecompress(vector <unsigned char> a, int length) {
+vector <char> ByteRunDecompress(vector <char> a, int length) {
     int i = 0;
-    vector <unsigned char> temp;
+    vector<char> temp;
     while (i < length) {
         if (a[i] == -128) {
             i++;
@@ -848,7 +848,8 @@ vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size) {
 }
 
 void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
-    vector <unsigned char> RLE, ByteRun;
+    vector <unsigned char> RLE;
+    vector <char> ByteRun;
     RLE = RLECompress(a, a.size());
     ByteRun = ByteRunCompress(a, a.size());
 
@@ -875,8 +876,10 @@ void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
 
     unsigned char temp, temp1, temp2;
 
-    vector <unsigned char> odczyt1, odczyt2, odczyt3;
+    vector <unsigned char> odczyt1, odczyt2;
+    vector <char> odczyt3;
 
+    /*
     ifstream odczyt("kekwORG.lol", ios::binary);
 
     for(int i = 0; i < a.size(); i++) {
@@ -918,8 +921,8 @@ void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
         }
     }
 
-    odczyt1.clear();
-    odczyt1 = RLEDecompress(odczyt2, odczyt2.size());
+    //odczyt1.clear();
+    odczyt2 = RLEDecompress(odczyt2, odczyt2.size());
 
     index = 0;
     for(int y = 0; y < bmp->h; y++) {
@@ -935,8 +938,8 @@ void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
         }
     }
 
-    odczyt1.clear();
-    odczyt1 = ByteRunDecompress(odczyt3, odczyt3.size());
+    //odczyt1.clear();
+    odczyt3 = ByteRunDecompress(odczyt3, odczyt3.size());
 
     index = 0;
     for(int y = 0; y < bmp->h; y++) {
@@ -953,7 +956,7 @@ void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
     }
 
     SDL_Flip(screen);
-
+    */
 
     /*
     if (RLE.size() == ByteRun.size()) {
