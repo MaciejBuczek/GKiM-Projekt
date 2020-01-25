@@ -19,10 +19,10 @@ int amountOfColors = 16;
 
 SDL_Surface *screen;
 SDL_Surface *bmp;
-int width = 1024;
-int height = 680;
 enum Type{r,g,b};
 
+Uint16 width;
+Uint16 height;
 
 string getNameOfFile();
 int getOption();
@@ -56,6 +56,7 @@ vector <char> RLEDecompress(vector <char> a, int size);
 void saveFile(vector <char> data, string &fileName, char compressionType, char paletteType);
 
 void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
+void setBMPPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
 SDL_Color getPixel (int x, int y);
 SDL_Color getPixelSurface(int x, int y, SDL_Surface *surface);
 void ladujBMP(int x, int y, SDL_Surface *surface);
@@ -72,7 +73,7 @@ void delExtention(string &fileName) {
 string getNameOfFile()
 {
     string fileName;
-    cout << "Enter the name of file: ";
+    cout << "Enter the name of file or drop the file here: ";
     cin.ignore();
     getline(cin, fileName);
     if (fileName[0] == '"') {
@@ -214,8 +215,13 @@ int checkChoice(string &option)
     return optionInMenu2;
 }
 
-void menu2(int conversionOption, string &fileName)
-{
+void menu2(int conversionOption, string &fileName) {
+
+    palette.clear();
+    sectors.clear();
+    width = 0;
+    height = 0;
+
     string optionTemp;
     int optionInMenu2 = 0;
     cout << endl;
@@ -348,7 +354,19 @@ int nearestColor(SDL_Color rgb) {
 }
 
 void convertFromBMPip(string &fileName, bool dithering) {
+
     bmp = SDL_LoadBMP(fileName.c_str());
+
+    width = bmp->w;
+    height = bmp->h;
+
+    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+    if ( !screen )
+    {
+        printf("Unable to set video: %s\n", SDL_GetError());
+        return;
+    }
+    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
 
     SDL_Color rgb;
 
@@ -413,7 +431,6 @@ void ditheringRGBVisualize(vector <unsigned char> &bmpPixels){
         for(int x=0; x<bmp->w; x++)
         {
             RGB =getPixelSurface(x,y,bmp);
-            setPixel(x,y,RGB.r,RGB.g,RGB.b);
 
             R=RGB.r+ErrR[x+shift][y];
             G=RGB.g+ErrG[x+shift][y];
@@ -461,7 +478,7 @@ void ditheringRGBVisualize(vector <unsigned char> &bmpPixels){
             ErrB[x+shift  ][y+1]+=(errB*5.0/16.0);
             ErrB[x+shift-1][y+1]+=(errB*3.0/16.0);
 
-            setPixel(x+bmp->w,y,newRGB.r, newRGB.g, newRGB.b);
+            setPixel(x,y,newRGB.r, newRGB.g, newRGB.b);
         }
     }
     SDL_Flip(screen);
@@ -483,8 +500,7 @@ void RGBVisualize(vector <unsigned char> &bmpPixels){
 
             mergePixels(x, y, index, bmpPixels);
 
-            setPixel(x,y,RGB.r,RGB.g,RGB.b);
-            setPixel(x+bmp->w, y, palette[index].r, palette[index].g, palette[index].b);
+            setPixel(x, y, palette[index].r, palette[index].g, palette[index].b);
         }
     }
     SDL_Flip(screen);
@@ -526,8 +542,7 @@ void ditheringGrayScaleVisualize(vector <unsigned char> &bmpPixels){
             ErrGS[x+shift  ][y+1]+=(errGS*5.0/16.0);
             ErrGS[x+shift-1][y+1]+=(errGS*3.0/16.0);
 
-            setPixel(x,y,RGB.r,RGB.g,RGB.b);
-            setPixel(x+bmp->w,y,newRGB.r, newRGB.r, newRGB.r);
+            setPixel(x,y,newRGB.r, newRGB.r, newRGB.r);
         }
     }
     SDL_Flip(screen);
@@ -549,8 +564,7 @@ void grayScaleVisualize(vector <unsigned char> &bmpPixels) {
 
             mergePixels(x, y, index, bmpPixels);
 
-            setPixel(x,y,RGB.r,RGB.g,RGB.b);
-            setPixel(x+bmp->w,y,palette[index].r, palette[index].r, palette[index].r);
+            setPixel(x,y,palette[index].r, palette[index].r, palette[index].r);
         }
     }
     SDL_Flip(screen);
@@ -691,6 +705,18 @@ void medianCut(){
 void convertFromBMPdp(string &fileName, bool dithering) {
 
     bmp = SDL_LoadBMP(fileName.c_str());
+    width = bmp->w;
+    height = bmp->h;
+
+    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+    if ( !screen )
+    {
+        printf("Unable to set video: %s\n", SDL_GetError());
+        return;
+    }
+    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
+
+
     medianCut();
 
     vector <unsigned char> bmpPixels;
@@ -701,6 +727,7 @@ void convertFromBMPdp(string &fileName, bool dithering) {
     else {
         RGBVisualize(bmpPixels);
     }
+
     delExtention(fileName);
     compareCompressionSizes(bmpPixels, fileName, 1);
 }
@@ -708,6 +735,16 @@ void convertFromBMPdp(string &fileName, bool dithering) {
 void convertFromBMPgs(string &fileName, bool dithering) {
 
     bmp = SDL_LoadBMP(fileName.c_str());
+    width = bmp->w;
+    height = bmp->h;
+
+    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+    if ( !screen )
+    {
+        printf("Unable to set video: %s\n", SDL_GetError());
+        return;
+    }
+    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
 
     vector <unsigned char> bmpPixels;
 
@@ -862,15 +899,12 @@ void compareCompressionSizes(vector <unsigned char> a, string &fileName, char pa
     ByteRun = ByteRunCompress(aNew, aNew.size());
 
     if(aNew.size() < min(RLE.size(), ByteRun.size())) {
-        cout << "Bez kompresji wyszlo najlepiej :o" << endl;
         saveFile(aNew, fileName, 0, paletteType);
     }
     else if (RLE.size() < ByteRun.size()) {
-        cout << "RLE mniejszy :D" << endl;
         saveFile(RLE, fileName, 1, paletteType);
     }
     else {
-        cout << "ByteRun mniejszy :D" << endl;
         saveFile(ByteRun, fileName, 2, paletteType);
     }
 }
@@ -878,11 +912,11 @@ void compareCompressionSizes(vector <unsigned char> a, string &fileName, char pa
 void saveFile(vector <char> data, string &fileName, char compressionType, char paletteType) {
 
     string entireFileName = fileName + ".yee";
-    ofstream zapis(entireFileName, ios::binary);
+    ofstream zapis(entireFileName.c_str(), ios::binary);
 
     char ID[] = "YE";
-    Uint16 width = bmp->w;
-    Uint16 height = bmp->h;
+    width = bmp->w;
+    height = bmp->h;
 
 
     zapis.write((char *)&ID, sizeof(char)*2);
@@ -915,30 +949,33 @@ void saveFile(vector <char> data, string &fileName, char compressionType, char p
     }
 
     zapis.close();
+
+    fileName.clear();
+    SDL_FreeSurface(bmp);
+
+    cout << "Press SPACE to go back to menu or ESC to exit (in active GKiM2019-Projekt window)" << endl;
 }
 
 void convertToBMP(string &fileName) {
-    ifstream odczyt(fileName, ios::binary);
+    ifstream odczyt(fileName.c_str(), ios::binary);
 
     char ID[] = "  ";
-    Uint16 width;
-    Uint16 height;
     char compressionType;
     char paletteType;
 
     vector <char> data;
 
     odczyt.read((char *)&ID, sizeof(char)*2);
+
+    if(ID[0] != 'Y' || ID[1] != 'E') {
+        cout << "Bad .yee id" << endl;
+        exit(0);
+    }
+
     odczyt.read((char *)&width, sizeof(Uint16));
     odczyt.read((char *)&height, sizeof(Uint16));
     odczyt.read((char *)&compressionType, sizeof(char));
     odczyt.read((char *)&paletteType, sizeof(char));
-
-    cout << ID[0] << ID[1] << endl;
-    cout << (int)width << endl;
-    cout << (int)height << endl;
-    cout << (int)compressionType << endl;
-    cout << (int)paletteType << endl;
 
     if(paletteType == 32) {
         SDL_Color rgb;
@@ -978,7 +1015,7 @@ void convertToBMP(string &fileName) {
         }
     }
     else {
-        cout << "Blad odczytu" << endl;
+        cout << "Read error" << endl;
         exit(0);
     }
 
@@ -1001,7 +1038,7 @@ void convertToBMP(string &fileName) {
         clearData = ByteRunDecompress(data, data.size());
     }
     else {
-        cout << "Blad odczytu" << endl;
+        cout << "Write error" << endl;
         exit(0);
     }
 
@@ -1009,7 +1046,7 @@ void convertToBMP(string &fileName) {
     unsigned char temp, temp1, temp2;
     int index = 0;
     for(int y = 0; y < height; y++) {
-        for(int x = 0; x < (width)/2; x++) {
+        for(int x = 0; x < width/2; x++) {
             temp = (unsigned int)clearData[index];
             temp1 = temp & 0b11110000;
             temp1 >>= 4;
@@ -1021,15 +1058,40 @@ void convertToBMP(string &fileName) {
         }
     }
 
+    bmp = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
 
+    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
+    if ( !screen )
+    {
+        printf("Unable to set video: %s\n", SDL_GetError());
+        return;
+    }
+    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
 
     for(int y = 0; y < height; y++) {
         for(int x = 0; x < width; x++) {
             temp = data[x+y*width];
             setPixel(x, y, palette[(int)temp].r, palette[(int)temp].g, palette[(int)temp].b);
+            setBMPPixel(x, y, palette[(int)temp].r, palette[(int)temp].g, palette[(int)temp].b);
         }
     }
+
+    delExtention(fileName);
+    fileName += "2.bmp";
+
+    int err = SDL_SaveBMP(bmp, fileName.c_str());
+
+    if(err != 0) {
+        cout << "Cannot save " << fileName << endl;
+        exit(0);
+    }
+
     SDL_Flip(screen);
+
+    fileName.clear();
+    SDL_FreeSurface(bmp);
+
+    cout << "Press SPACE to go back to menu or ESC to exit (in active GKiM2019-Projekt window)" << endl;
 }
 
 void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B) {
@@ -1070,9 +1132,50 @@ void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B) {
         case 4: //32-bit
             *(Uint32 *)p = pixel;
             break;
+    }
+  }
+}
+
+void setBMPPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B) {
+  if ((x>=0) && (x<width) && (y>=0) && (y<height))
+  {
+    /* Zamieniamy poszczeg�lne sk�adowe koloru na format koloru piksela */
+    Uint32 pixel = SDL_MapRGB(bmp->format, R, G, B);
+
+    /* Pobieramy informacj� ile bajt�w zajmuje jeden piksel */
+    int bpp = bmp->format->BytesPerPixel;
+
+    /* Obliczamy adres piksela */
+    Uint8 *p = (Uint8 *)bmp->pixels + y * bmp->pitch + x * bpp;
+
+    /* Ustawiamy warto�� piksela, w zale�no�ci od formatu powierzchni*/
+    switch(bpp)
+    {
+        case 1: //8-bit
+            *p = pixel;
+            break;
+
+        case 2: //16-bit
+            *(Uint16 *)p = pixel;
+            break;
+
+        case 3: //24-bit
+            if(SDL_BYTEORDER == SDL_BIG_ENDIAN) {
+                p[0] = (pixel >> 16) & 0xff;
+                p[1] = (pixel >> 8) & 0xff;
+                p[2] = pixel & 0xff;
+            } else {
+                p[0] = pixel & 0xff;
+                p[1] = (pixel >> 8) & 0xff;
+                p[2] = (pixel >> 16) & 0xff;
+            }
+            break;
+
+        case 4: //32-bit
+            *(Uint32 *)p = pixel;
+            break;
 
     }
-         /* ewentualna aktualizacja obrazu (aka double buffering) */
   }
 }
 
@@ -1131,6 +1234,7 @@ void ladujBMP(int x, int y, SDL_Surface *surface) {
 }
 
 int main ( int argc, char** argv ) {
+
     freopen( "CON", "wt", stdout );
     freopen( "CON", "wt", stderr );
 
@@ -1140,67 +1244,39 @@ int main ( int argc, char** argv ) {
         return 1;
     }
 
-    // make sure SDL cleans up before exit
     atexit(SDL_Quit);
-
-    // create a new window
-    screen = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
-    if ( !screen )
-    {
-        printf("Unable to set video: %s\n", SDL_GetError());
-        return 1;
-    }
-    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
-
-    SDL_Surface *screen2 = SDL_SetVideoMode(width, height, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
-        if ( !screen2 )
-    {
-        printf("Unable to set video: %s\n", SDL_GetError());
-        return 1;
-    }
-    SDL_WM_SetCaption( "GKiM2019 - Projekt" , NULL );
 
     string fileName;
     menu();
-    //string n="yee.bmp";
-    //convertFromBMPdp(n);
 
-    // program main loop
     bool done = false;
     while (!done)
     {
-        // message processing loop
         SDL_Event event;
         while (SDL_PollEvent(&event))
         {
-            // check for messages
             switch (event.type)
             {
-                // exit if the window is closed
             case SDL_QUIT:
                 done = true;
                 break;
 
-                // check for keypresses
             case SDL_KEYDOWN:
                 {
-                    // exit if ESCAPE is pressed
                     if (event.key.keysym.sym == SDLK_ESCAPE){
                         done = true;
                     }
                     if (event.key.keysym.sym == SDLK_SPACE){
+                        SDL_FillRect(screen, 0, SDL_MapRGB(screen->format, 0, 0, 0));
+                        SDL_Flip(screen);
+
                         menu2(0, fileName);
                     }
                     break;
                 }
-            } // end switch
-        } // end of message processing
-    } // end main loop
-
-    // free loaded bitmap
-    SDL_FreeSurface(bmp);
-
-    // all is well ;)
+            }
+        }
+    }
     printf("Exited cleanly\n");
     return 0;
 }
