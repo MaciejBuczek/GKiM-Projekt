@@ -48,12 +48,12 @@ void GrayScaleVisualize(vector <unsigned char> &bmpPixels);
 
 void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels);
 
-void compareCompressionSizes(vector <unsigned char> a, string &fileName);
-vector <unsigned char> RLECompress(vector <unsigned char> a, int size);
+void compareCompressionSizes(vector <unsigned char> a, string &fileName, char paletteType);
+vector <char> RLECompress(vector <char> a, int size);
 vector <char> ByteRunCompress(vector <char> a, int length);
 vector <char> ByteRunDecompress(vector <char> a, int length);
-vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size);
-void saveFile(vector <unsigned char> data, string &fileName);
+vector <char> RLEDecompress(vector <char> a, int size);
+void saveFile(vector <char> data, string &fileName, char compressionType, char paletteType);
 
 void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B);
 SDL_Color getPixel (int x, int y);
@@ -163,7 +163,7 @@ bool checkIfFileExists(bool bmp, string& fileName)
 {
     fstream fileExists;
     if(bmp == false)
-        fileName = fileName + ".lol";
+        fileName = fileName + ".yee";
     else
         fileName = fileName + ".bmp";
 
@@ -222,8 +222,8 @@ void menu2(int conversionOption, string &fileName)
     cout << "1. Help" << endl;
     cout << "2. Enter file name" << endl;
     cout << "3. Pick color palette" << endl;
-    cout << "4. Convert picture .bmp to .lol with actual choices" << endl;
-    cout << "5. Convert picture .lol to .bmp with actual name" << endl;
+    cout << "4. Convert picture .bmp to .yee with actual choices" << endl;
+    cout << "5. Convert picture .yee to .bmp with actual name" << endl;
     cout << "6. Show actual choices" << endl;
     cout << "9. Exit" << endl;
     cout << "Choice: ";
@@ -373,7 +373,9 @@ void convertFromBMPip(string &fileName, bool dithering) {
     else {
         RGBVisualize(bmpPixels);
     }
-    compareCompressionSizes(bmpPixels, fileName);
+
+    delExtention(fileName);
+    compareCompressionSizes(bmpPixels, fileName, 0);
 }
 
 void mergePixels(int x, int y, int index, vector <unsigned char> &bmpPixels){
@@ -699,7 +701,8 @@ void convertFromBMPdp(string &fileName, bool dithering) {
     else {
         RGBVisualize(bmpPixels);
     }
-    compareCompressionSizes(bmpPixels, fileName);
+    delExtention(fileName);
+    compareCompressionSizes(bmpPixels, fileName, 1);
 }
 
 void convertFromBMPgs(string &fileName, bool dithering) {
@@ -722,12 +725,12 @@ void convertFromBMPgs(string &fileName, bool dithering) {
     else {
         grayScaleVisualize(bmpPixels);
     }
-
-    compareCompressionSizes(bmpPixels, fileName);
+    delExtention(fileName);
+    compareCompressionSizes(bmpPixels, fileName, 2);
 }
 
-vector <unsigned char> RLECompress(vector <unsigned char> a, int size) {
-    vector <unsigned char> temp;
+vector <char> RLECompress(vector <char> a, int size) {
+    vector <char> temp;
     int pointer = 0, counter = 0;
 
     while (pointer != size - 1) {
@@ -767,22 +770,22 @@ vector <unsigned char> RLECompress(vector <unsigned char> a, int size) {
     return temp;
 }
 
-vector <char> ByteRunCompress(vector <unsigned char> a, int length) {
+vector <char> ByteRunCompress(vector <char> a, int length) {
     vector<char> temp;
     int i = 0;
     while (i < length) {
-        if (i < length - 1 && (char)a[i] == (char)a[i + 1]) {
+        if (i < length - 1 && a[i] == a[i + 1]) {
             int j = 0;
-            while (i + j < length - 1 && (char)a[i + j] == (char)a[i + j + 1] && j < 127) {
+            while (i + j < length - 1 && a[i + j] == a[i + j + 1] && j < 127) {
                 j++;
             }
             temp.push_back(-j);
-            temp.push_back((char)a[i + j]);
+            temp.push_back(a[i + j]);
             i += j + 1;
         }
         else {
             int j = 0;
-            while (i + j < length - 1 && (char)a[i + j] != (char)a[j + i + 1] && j < 128) {
+            while (i + j < length - 1 && a[i + j] != a[j + i + 1] && j < 128) {
                 j++;
             }
             if (i + j == length - 1 && j < 128) {
@@ -790,7 +793,7 @@ vector <char> ByteRunCompress(vector <unsigned char> a, int length) {
             }
             temp.push_back(j - 1);
             for (int k = 0; k < j; k++) {
-                temp.push_back((char)a[i + k]);
+                temp.push_back(a[i + k]);
             }
             i += j;
         }
@@ -807,13 +810,13 @@ vector <char> ByteRunDecompress(vector <char> a, int length) {
         }
         else if (a[i] < 0) {
             for (int j = 0; j < -(a[i] - 1); j++) {
-                temp.push_back((int)a[i + 1]);
+                temp.push_back(a[i + 1]);
             }
             i += 2;
         }
         else {
             for (int j = 0; j < (a[i] + 1); j++) {
-                temp.push_back((int)a[i + 1 + j]);
+                temp.push_back(a[i + 1 + j]);
             }
             i += a[i] + 2;
         }
@@ -821,8 +824,8 @@ vector <char> ByteRunDecompress(vector <char> a, int length) {
     return temp;
 }
 
-vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size) {
-    vector <unsigned char> temp;
+vector <char> RLEDecompress(vector <char> a, int size) {
+    vector <char> temp;
     int pointer = 0, counter = 0;
 
     while (pointer < size - 1) {
@@ -847,138 +850,65 @@ vector <unsigned char> RLEDecompress(vector <unsigned char> a, int size) {
     return temp;
 }
 
-void compareCompressionSizes(vector <unsigned char> a, string &fileName) {
-    vector <unsigned char> RLE;
+void compareCompressionSizes(vector <unsigned char> a, string &fileName, char paletteType) {
+
+    vector <char> RLE;
     vector <char> ByteRun;
-    RLE = RLECompress(a, a.size());
-    ByteRun = ByteRunCompress(a, a.size());
-
-    ofstream zapis("kekwORG.lol", ios::binary);
-
+    vector <char> aNew;
     for(int i = 0; i < a.size(); i++) {
-        zapis.write((char *)&a[i], sizeof(char));
+        aNew.push_back((char)a[i]);
     }
-    zapis.close();
+    RLE = RLECompress(aNew, aNew.size());
+    ByteRun = ByteRunCompress(aNew, aNew.size());
 
-    zapis.open("kekwRLE.lol", ios::binary);
-
-    for(int i = 0; i < RLE.size(); i++) {
-        zapis.write((char *)&RLE[i], sizeof(char));
+    if(aNew.size() < min(RLE.size(), ByteRun.size())) {
+        cout << "Bez kompresji wyszlo najlepiej :o" << endl;
+        saveFile(aNew, fileName, 0, paletteType);
     }
-    zapis.close();
-
-    zapis.open("kekwByte.lol", ios::binary);
-
-    for(int i = 0; i < ByteRun.size(); i++) {
-        zapis.write((char *)&ByteRun[i], sizeof(char));
-    }
-    zapis.close();
-
-    unsigned char temp, temp1, temp2;
-
-    vector <unsigned char> odczyt1, odczyt2;
-    vector <char> odczyt3;
-
-    /*
-    ifstream odczyt("kekwORG.lol", ios::binary);
-
-    for(int i = 0; i < a.size(); i++) {
-        odczyt.read((char *)&temp, sizeof(char));
-        odczyt1.push_back(temp);
-    }
-
-    odczyt.close();
-
-    odczyt.open("kekwRLE.lol", ios::binary);
-
-    for(int i = 0; i < a.size(); i++) {
-        odczyt.read((char *)&temp, sizeof(char));
-        odczyt2.push_back(temp);
-    }
-
-    odczyt.close();
-
-    odczyt.open("kekwByte.lol", ios::binary);
-
-    for(int i = 0; i < a.size(); i++) {
-        odczyt.read((char *)&temp, sizeof(char));
-        odczyt3.push_back(temp);
-    }
-
-    odczyt.close();
-
-    int index = 0;
-    for(int y = 0; y < bmp->h; y++) {
-        for(int x = 0; x < (bmp->w)/2; x++) {
-            temp = odczyt1[index];
-            temp1 = temp & 0b11110000;
-            temp1 >>= 4;
-            temp2 = temp & 0b00001111;
-            setPixel(x*2, y+bmp->h, palette[(int)temp1].r, palette[(int)temp1].g, palette[(int)temp1].b);
-            setPixel(x*2+1, y+bmp->h, palette[(int)temp2].r, palette[(int)temp2].g, palette[(int)temp2].b);
-
-            index++;
-        }
-    }
-
-    //odczyt1.clear();
-    odczyt2 = RLEDecompress(odczyt2, odczyt2.size());
-
-    index = 0;
-    for(int y = 0; y < bmp->h; y++) {
-        for(int x = 0; x < (bmp->w)/2; x++) {
-            temp = odczyt1[index];
-            temp1 = temp & 0b11110000;
-            temp1 >>= 4;
-            temp2 = temp & 0b00001111;
-            setPixel(x*2+bmp->w, y+bmp->h, palette[(int)temp1].r, palette[(int)temp1].g, palette[(int)temp1].b);
-            setPixel(x*2+1+bmp->w, y+bmp->h, palette[(int)temp2].r, palette[(int)temp2].g, palette[(int)temp2].b);
-
-            index++;
-        }
-    }
-
-    //odczyt1.clear();
-    odczyt3 = ByteRunDecompress(odczyt3, odczyt3.size());
-
-    index = 0;
-    for(int y = 0; y < bmp->h; y++) {
-        for(int x = 0; x < (bmp->w)/2; x++) {
-            temp = odczyt1[index];
-            temp1 = temp & 0b11110000;
-            temp1 >>= 4;
-            temp2 = temp & 0b00001111;
-            setPixel(x*2+(bmp->w*2), y+bmp->h, palette[(int)temp1].r, palette[(int)temp1].g, palette[(int)temp1].b);
-            setPixel(x*2+1+(bmp->w*2), y+bmp->h, palette[(int)temp2].r, palette[(int)temp2].g, palette[(int)temp2].b);
-
-            index++;
-        }
-    }
-
-    SDL_Flip(screen);
-    */
-
-    /*
-    if (RLE.size() == ByteRun.size()) {
-        cout << "Lepiej ByteRun, bo RLE sam pisalem i nie wiem czy w 100% dziala xD" << endl;
-        saveFile(ByteRun);
+    else if (RLE.size() < ByteRun.size()) {
+        cout << "RLE mniejszy :D" << endl;
+        saveFile(RLE, fileName, 1, paletteType);
     }
     else {
-        if (RLE.size() < ByteRun.size()) {
-            cout << "ByteRun mniejszy :D" << endl;
-            saveFile(RLE, fileName);
-        }
-        else {
-            cout << "RLE mniejszy :D" << endl;
-            saveFile(ByteRun, fileName);
-        }
+        cout << "ByteRun mniejszy :D" << endl;
+        saveFile(ByteRun, fileName, 2, paletteType);
     }
-    */
 }
 
-void saveFile(vector <unsigned char> data, string &fileName) {
+void saveFile(vector <char> data, string &fileName, char compressionType, char paletteType) {
 
-    ofstream zapis("kek.lol", ios::binary);
+    string entireFileName = fileName + ".yee";
+    ofstream zapis(entireFileName, ios::binary);
+
+    char ID[] = "YE";
+    Uint16 width = bmp->w;
+    Uint16 height = bmp->h;
+
+
+    zapis.write((char *)&ID, sizeof(char)*2);
+    zapis.write((char *)&width, sizeof(Uint16));
+    zapis.write((char *)&height, sizeof(Uint16));
+    zapis.write((char *)&compressionType, sizeof(char));
+
+    if((int)paletteType == 0) {
+        char temp = 32;
+        zapis.write((char *)&temp, sizeof(char));
+    }
+    else if((int)paletteType == 1) {
+        char temp = (char)palette.size();
+        zapis.write((char *)&temp, sizeof(char));
+
+        for(int i = 0; i < palette.size(); i++) {
+            zapis.write((char *)&palette[i].r, sizeof(char));
+            zapis.write((char *)&palette[i].g, sizeof(char));
+            zapis.write((char *)&palette[i].b, sizeof(char));
+        }
+    }
+    else if((int)paletteType == 2) {
+        char temp = 64;
+        zapis.write((char *)&temp, sizeof(char));
+    }
+
 
     for(int i = 0; i < data.size(); i++) {
         zapis.write((char *)&data[i], sizeof(char));
@@ -988,7 +918,118 @@ void saveFile(vector <unsigned char> data, string &fileName) {
 }
 
 void convertToBMP(string &fileName) {
+    ifstream odczyt(fileName, ios::binary);
 
+    char ID[] = "  ";
+    Uint16 width;
+    Uint16 height;
+    char compressionType;
+    char paletteType;
+
+    vector <char> data;
+
+    odczyt.read((char *)&ID, sizeof(char)*2);
+    odczyt.read((char *)&width, sizeof(Uint16));
+    odczyt.read((char *)&height, sizeof(Uint16));
+    odczyt.read((char *)&compressionType, sizeof(char));
+    odczyt.read((char *)&paletteType, sizeof(char));
+
+    cout << ID[0] << ID[1] << endl;
+    cout << (int)width << endl;
+    cout << (int)height << endl;
+    cout << (int)compressionType << endl;
+    cout << (int)paletteType << endl;
+
+    if(paletteType == 32) {
+        SDL_Color rgb;
+        palette.clear();
+        int index = 0;
+        for (int r = 0; r <= 255; r += 255) {
+            rgb.r = r;
+            for (int g = 0; g <= 255; g += 85) {
+                rgb.g = g;
+                for(int b = 0; b <= 255; b += 255){
+                    rgb.b = b;
+                    palette.push_back(rgb);
+                    index++;
+                }
+            }
+        }
+    }
+    else if(paletteType == 64) {
+        palette.clear();
+        SDL_Color rgb;
+        int grayScale = 0;
+        for (int i = 0; i < 16; i++) {
+            rgb = {.r = grayScale, .g = grayScale, .b = grayScale};
+            palette.push_back(rgb);
+            grayScale += 17;
+        }
+    }
+    else if(paletteType > 0 && paletteType <= 16) {
+        palette.clear();
+        char r, g, b;
+        for(int i = 0; i < paletteType; i++) {
+            odczyt.read((char *)&r, sizeof(char));
+            odczyt.read((char *)&g, sizeof(char));
+            odczyt.read((char *)&b, sizeof(char));
+
+            palette.push_back({.r = r, .g = g, .b = b});
+        }
+    }
+    else {
+        cout << "Blad odczytu" << endl;
+        exit(0);
+    }
+
+    for(int i = 0; i < (width/2)*height; i++) {
+        char temp;
+        odczyt.read((char *)&temp, sizeof(char));
+
+        data.push_back(temp);
+    }
+    odczyt.close();
+
+    vector <char> clearData;
+    if(compressionType == 0) {
+        clearData = data;
+    }
+    else if(compressionType == 1) {
+        clearData = RLEDecompress(data, data.size());
+    }
+    else if(compressionType == 2) {
+        clearData = ByteRunDecompress(data, data.size());
+    }
+    else {
+        cout << "Blad odczytu" << endl;
+        exit(0);
+    }
+
+    data.clear();
+    unsigned char temp, temp1, temp2;
+    int index = 0;
+    for(int y = 0; y < height; y++) {
+        for(int x = 0; x < (width)/2; x++) {
+            temp = (unsigned int)clearData[index];
+            temp1 = temp & 0b11110000;
+            temp1 >>= 4;
+            temp2 = temp & 0b00001111;
+            data.push_back(temp1);
+            data.push_back(temp2);
+
+            index++;
+        }
+    }
+
+
+
+    for(int y = 0; y < height; y++) {
+        for(int x = 0; x < width; x++) {
+            temp = data[x+y*width];
+            setPixel(x, y, palette[(int)temp].r, palette[(int)temp].g, palette[(int)temp].b);
+        }
+    }
+    SDL_Flip(screen);
 }
 
 void setPixel(int x, int y, Uint8 R, Uint8 G, Uint8 B) {
