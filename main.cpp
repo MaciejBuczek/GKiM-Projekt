@@ -83,8 +83,6 @@ string getNameOfFile()
         fileName.resize(fileName.size()-2);
     }
     delExtention(fileName);
-
-    cout << fileName << endl;
     return fileName;
 }
 
@@ -979,6 +977,8 @@ void saveFile(vector <char> data, string &fileName, char compressionType, char p
 }
 
 void convertToBMP(string &fileName) {
+    delExtention(fileName);
+    fileName += ".yee";
     ifstream odczyt(fileName.c_str(), ios::binary);
 
     char ID[] = "  ";
