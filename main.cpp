@@ -160,15 +160,15 @@ void showChoices(int option, string &fileName)
     }
 }
 
-bool checkIfFileExists(bool bmp, string& fileName)
-{
+bool checkIfFileExists(bool bmp, string& fileName) {
     fstream fileExists;
+    string tempFileName;
     if(bmp == false)
-        fileName = fileName + ".yee";
+        tempFileName = fileName + ".yee";
     else
-        fileName = fileName + ".bmp";
+        tempFileName = fileName + ".bmp";
 
-    fileExists.open(fileName.c_str());
+    fileExists.open(tempFileName.c_str());
     if(!fileExists.is_open()) {
         fileExists.close();
         return false;
@@ -355,6 +355,8 @@ int nearestColor(SDL_Color rgb) {
 
 void convertFromBMPip(string &fileName, bool dithering) {
 
+    delExtention(fileName);
+    fileName += ".bmp";
     bmp = SDL_LoadBMP(fileName.c_str());
 
     width = bmp->w;
@@ -720,6 +722,8 @@ void medianCut(){
 
 void convertFromBMPdp(string &fileName, bool dithering) {
 
+    delExtention(fileName);
+    fileName += ".bmp";
     bmp = SDL_LoadBMP(fileName.c_str());
     width = bmp->w;
     height = bmp->h;
@@ -750,6 +754,8 @@ void convertFromBMPdp(string &fileName, bool dithering) {
 
 void convertFromBMPgs(string &fileName, bool dithering) {
 
+    delExtention(fileName);
+    fileName += ".bmp";
     bmp = SDL_LoadBMP(fileName.c_str());
     width = bmp->w;
     height = bmp->h;
@@ -1061,16 +1067,34 @@ void convertToBMP(string &fileName) {
     data.clear();
     unsigned char temp, temp1, temp2;
     int index = 0;
-    for(int y = 0; y < height; y++) {
-        for(int x = 0; x < width/2; x++) {
-            temp = (unsigned int)clearData[index];
-            temp1 = temp & 0b11110000;
-            temp1 >>= 4;
-            temp2 = temp & 0b00001111;
-            data.push_back(temp1);
-            data.push_back(temp2);
+    if(width%2 == 1) {
+        for(int y = 0; y < height; y++) {
+            for(int x = 0; x < width/2; x++) {
+                temp = (unsigned int)clearData[index];
+                temp1 = temp & 0b11110000;
+                temp1 >>= 4;
+                data.push_back(temp1);
+                if(x != (width/2)-1) {
+                    temp2 = temp & 0b00001111;
+                    data.push_back(temp2);
+                }
 
-            index++;
+                index++;
+            }
+        }
+    }
+    else {
+        for(int y = 0; y < height; y++) {
+            for(int x = 0; x < width/2; x++) {
+                temp = (unsigned int)clearData[index];
+                temp1 = temp & 0b11110000;
+                temp1 >>= 4;
+                data.push_back(temp1);
+                temp2 = temp & 0b00001111;
+                data.push_back(temp2);
+
+                index++;
+            }
         }
     }
 
