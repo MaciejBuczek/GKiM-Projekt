@@ -73,7 +73,7 @@ void delExtention(string &fileName) {
 string getNameOfFile()
 {
     string fileName;
-    cout << "Enter the name of file or drop the file here: ";
+    cout << "Enter the name of file or drag and drop the file here: ";
     cin.ignore();
     getline(cin, fileName);
     if (fileName[0] == '"') {
@@ -110,20 +110,20 @@ int getOption()
 
 void help()
 {
-    cout << "Program can convert bmp picture to 16 colors picture to reduce the size of file." << endl;
-    cout << "There are three conversion options." << endl;
-    cout << "1. Imposed palette - algorithm use predefined 16 colors and convert picture." << endl;
-    cout << "2. Dedicated palette - algorithm is searching picture to find which colors appear most often\n";
-    cout << "and use this colors in conversion." << endl;
-    cout << "3. Gray scale - algorithm use 16 degree gray scale in conversion." << endl;
+    cout << "This Program converts .bmp image to 16 colors image to reduce the size of a file.\n" << endl;
+    cout << "There are three main conversion options: " << endl;
+    cout << "1. Imposed palette - algorithm uses predefined 16-color palette." << endl;
+    cout << "2. Dedicated palette - algorithm generates 16-color palette that consists of colors\nthat appear most often in the image."<< endl;
+    cout << "3. Gray scale - algorithm uses predefined 16 degree gray scale palette.\n" << endl;
+    cout << "Also there is an option to enable dithering which will prevent large-scale color patterns\nsuch as color banding in image."<< endl;
 }
 
 void showChoices(int option, string &fileName)
 {
-    cout << "Actual choices: " << endl;
+    cout << "Current choices: " << endl;
     cout << "File name: ";
     if(fileName.empty()) {
-        cout << "You must type file name first" << endl;
+        cout << "You must type file a name first" << endl;
     }
     else
     {
@@ -134,7 +134,7 @@ void showChoices(int option, string &fileName)
     switch (option)
     {
     case 0:
-        cout << "You must choose option first" << endl;
+        cout << "You must choose an option first" << endl;
         break;
     case 1:
         cout << "Standard imposed palette" << endl;
@@ -155,7 +155,7 @@ void showChoices(int option, string &fileName)
         cout << "Gray scale with dithering" << endl;
         break;
     default:
-        cout << "Error. Bad conversionOption value" << endl;
+        cout << "Error. Bad conversion option value" << endl;
         break;
     }
 }
@@ -228,9 +228,9 @@ void menu2(int conversionOption, string &fileName) {
     cout << "1. Help" << endl;
     cout << "2. Enter file name" << endl;
     cout << "3. Pick color palette" << endl;
-    cout << "4. Convert picture .bmp to .yee with actual choices" << endl;
-    cout << "5. Convert picture .yee to .bmp with actual name" << endl;
-    cout << "6. Show actual choices" << endl;
+    cout << "4. Convert image from .bmp to .yee with current choices" << endl;
+    cout << "5. Convert image from .yee to .bmp with current name" << endl;
+    cout << "6. Show current choices" << endl;
     cout << "9. Exit" << endl;
     cout << "Choice: ";
     cin >> optionTemp;
@@ -255,7 +255,7 @@ void menu2(int conversionOption, string &fileName) {
         break;
     case 4:
         if(fileName.empty() == true) {
-            cout << "You must type a name of file to convert!\n\n";
+            cout << "You must type a name of a file to convert!\n\n";
             fileName = getNameOfFile();
             menu2(conversionOption, fileName);
         }
@@ -288,7 +288,7 @@ void menu2(int conversionOption, string &fileName) {
                 convertFromBMPgs(fileName, true);
                 break;
             default:
-                cout << "Error. Bad conversionOption value" << endl;
+                cout << "Error. Bad conversion option value" << endl;
                 menu2(conversionOption, fileName);
                 break;
             }
@@ -331,7 +331,7 @@ void menu2(int conversionOption, string &fileName) {
 
 void menu()
 {
-    cout << "Welcome in pictures converter. You can find informations in help." << endl;
+    cout << "Welcome in image converter. You can find informations in help." << endl;
     int conversionOption = 0;
     string fileName;
     menu2(conversionOption, fileName);
@@ -415,13 +415,22 @@ void ditheringRGBVisualize(vector <unsigned char> &bmpPixels){
     SDL_Color RGB;
     SDL_Color newRGB;
 
-    float ErrR[(bmp->w+2)][bmp->h+1];
-    float ErrG[(bmp->w+2)][bmp->h+1];
-    float ErrB[(bmp->w+2)][bmp->h+1];
-
-    memset(ErrR, 0, sizeof(ErrR));
-    memset(ErrG, 0, sizeof(ErrG));
-    memset(ErrB, 0, sizeof(ErrB));
+    float **ErrR;
+    float **ErrG;
+    float **ErrB;
+    ErrR=new float*[bmp->w+2];
+    ErrG=new float*[bmp->w+2];
+    ErrB=new float*[bmp->w+2];
+    for(int i=0; i<bmp->w+2; i++){
+        ErrR[i]=new float[bmp->h+1];
+        ErrG[i]=new float[bmp->h+1];
+        ErrB[i]=new float[bmp->h+1];
+        for(int j=0; j<bmp->h+1; j++){
+            ErrR[i][j]=0;
+            ErrG[i][j]=0;
+            ErrB[i][j]=0;
+        }
+    }
 
     int errR, errG, errB, R, G, B, index;
     int shift=1;
@@ -510,8 +519,15 @@ void ditheringGrayScaleVisualize(vector <unsigned char> &bmpPixels){
     SDL_Color RGB;
     SDL_Color newRGB;
 
-    float ErrGS[(bmp->w+2)][bmp->h+1];
-    memset(ErrGS, 0, sizeof(ErrGS));
+    float **ErrGS;
+    ErrGS=new float*[bmp->w+2];
+    for(int i=0; i<bmp->w+2; i++){
+        ErrGS[i]=new float[bmp->h+1];
+        for(int j=0; j<bmp->h+1; j++){
+            ErrGS[i][j]=0;
+        }
+    }
+
     int errGS, GS, index;
     int shift=1;
 
